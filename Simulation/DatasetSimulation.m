@@ -10,6 +10,7 @@ PDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/PDOP");
 VDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/VDOP");
 %}
 gps_pos_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
+gps_vel_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
 acc_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/accelerometer");
 gyro_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/gyroscope");
 gt_pos = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/position");
@@ -70,11 +71,11 @@ estQuat(1, :) = 1;
 dt = 0.01;
 
 for ii = 2:length(gyro_000)
-    gyro = gyro_000(:, ii - 1);
-
+    gyro = gyro_000(:, ii - 1) - imu_gyro_bias;
+    acc = acc_000(:,ii-1) - imu_acc_bias;
     quatToEuler = quat2eul(estQuat(:, ii - 1)', 'ZYX'); % seuence of yaw, pitch and roll
-    accelPitch = asin(-acc_000(1, ii - 1) / (-9.81));
-    accelRoll = asin(acc_000(2, ii - 1) / (-9.81 * cos(accelPitch)));
+    accelPitch = asin(-acc(1) / (-9.81));
+    accelRoll = asin(acc(2) / (-9.81 * cos(accelPitch)));
     estAttitude(ii - 1, 1) = quatToEuler(1);
 
     B =  [0, -gyro(1), -gyro(2), -gyro(3);
@@ -112,6 +113,67 @@ plot((gt_attitude - estQuat)');
 title("error");
 
 %% position
+%reused estQuat from previous section, attitude estimation is independent from position 
+q = estQuat;
+ekfCov = eye(7);
+Q = eye(7) * 0.0001; %needs tuning
+
+pos_err = zeros(3,8818);
+attitude_error = zeros(4, 8818);
+pos = zeros(3, 8818);
+vel = zeros(3, 8818);
+omega = zeros(3, 8818);
+inertial_acc = zeros(3, 8818);
+
+predicted_state = zeros(6,8818);
+jj = 1;
+for ii = 2:length(gyro_000)
+  gyro = gyro_000(:, ii - 1) - imu_gyro_bias;
+  acc = acc_000(:,ii-1) - imu_acc_bias;
+  
+  %imu predict
+  M = [1 - 2*q(2)*q(2) - 2*q(3)*q(3), 2*q(1)*q(2) - 2*q(0)*q(3), 2*q(1)*q(3) + 2*q(0)*q(2);
+      2*q(1)*q(2) + 2*q(0)*q(3),  1 - 2*q(1)*q(1) - 2*q(3)*q(3), 2*q(2)*q(3) - 2*q(0)*q(1);
+      2*q(1)*q(3) - 2*q(0)*q(2), 2*q(2)*q(3) + 2*q(0)*q(1), 1 - 2*q(1)*q(1) - 2*q(2)*q(2)];
+  inertial_acc(:,ii) = M*acc;
+  inertial_accel(2,ii) = inertial_accel(2,ii) + 9.81;
+  predictedState(1:3,ii) = pos(:,ii-1) + vel(:,ii-1)*dt;
+  predictedState(4:6,ii) = vel(:,ii-1) + inertial_accel * dt;
+  
+
+  estAttitude(:,ii) = quat2eul(estQuat(:, ii)', 'ZYX');
+  RbgPrime = zeros(3,3);
+  RbgPrime(1, 1) = -cos(estAttitude(2)) * sin(estAttitude(1));
+  RbgPrime(1, 2) = -sin(estAttitude(3)) * sin(estAttitude(2)) * sin(estAttitude(1)) - cos(estAttitude(3)) * cos(estAttitude(1));
+  RbgPrime(1, 3) = -cos(estAttitude(3)) * sin(estAttitude(2)) * sin(estAttitude(1)) + sin(estAttitude(3)) * cos(estAttitude(1));
+  RbgPrime(2, 1) = cos(estAttitude(2)) * cos(estAttitude(1));
+  RbgPrime(2, 2) = sin(estAttitude(3)) * sin(estAttitude(2)) * cos(estAttitude(1)) - cos(estAttitude(3)) * sin(estAttitude(1));
+  RbgPrime(2, 3) = cos(estAttitude(3)) * sin(estAttitude(2)) * cos(estAttitude(1)) + sin(estAttitude(3)) * sin(estAttitude(1));
+
+    
+  gPrime = eye(7);
+
+  gPrime(1, 4) = dt;
+  gPrime(2, 5) = dt;
+  gPrime(3, 6) = dt;
+
+  helper_matrix = RbgPrime * acc;
+  gPrime(4, 7) = helper_matrix(1) * dt;
+  gPrime(5, 7) = helper_matrix(2) * dt;
+  gPrime(6, 7) = helper_matrix(3) * dt;
+  gTranspose = gPrime';
+  ekfCov = gPrime * ekfCov * gTranspose + Q;
+
+  if(mod(ii, 100) == 1 && jj <= length(gps_pos_000))
+        
+        jj = jj + 1;
+  end
+  
+  pos(:,ii) = predictedState(1:3,ii);
+  vel(:,ii) = predictedState(4:6,ii);
+
+end
+%% position with ekf_mex
 pos_err = zeros(3,8818);
 attitude_error = zeros(4, 8818);
 pos = zeros(3, 8818);
