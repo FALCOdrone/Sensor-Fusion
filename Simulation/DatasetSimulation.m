@@ -57,6 +57,7 @@ title("acceleration error");
 legend("error x", "error y", "error z");
 
 %% TESTING ATTITUDE ESTIMATION WITH KALMAN FILTER
+% Prova commento github
 %import functions.fromQuatToEuler.*
 estAttitude = zeros(length(gyro_000), 3);
 ekfCov_at = eye(4);
