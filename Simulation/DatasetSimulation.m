@@ -116,13 +116,24 @@ title("error");
 %reused estQuat from previous section, attitude estimation is independent from position 
 q = estQuat;
 ekfCov = eye(7);
-Q = eye(7) * 0.0001; %needs tuning
+
+Q = eye(7)*0.5^2;   %model covariance
+Q(7,7) = 0.095^2;   %related to yaw
+Q = Q * dt;
+
+R_gps = zeros(6,6); %GPS noise matrix
+R_gps(1,1) = 0.1^2;
+R_gps(2,2) = 0.1^2;
+R_gps(3,3) = 0.3^2;
+R_gps(4,4) = 0.1^2;
+R_gps(5,5) = 0.1^2;
+R_gps(6,6) = 0.3^2;
+
 
 pos_err = zeros(3,8818);
 attitude_error = zeros(4, 8818);
 pos = zeros(3, 8818);
 vel = zeros(3, 8818);
-omega = zeros(3, 8818);
 inertial_acc = zeros(3, 8818);
 
 predicted_state = zeros(6,8818);
@@ -132,24 +143,21 @@ for ii = 2:length(gyro_000)
   acc = acc_000(:,ii-1) - imu_acc_bias;
   
   %imu predict
-  M = [1 - 2*q(2)*q(2) - 2*q(3)*q(3), 2*q(1)*q(2) - 2*q(0)*q(3), 2*q(1)*q(3) + 2*q(0)*q(2);
-      2*q(1)*q(2) + 2*q(0)*q(3),  1 - 2*q(1)*q(1) - 2*q(3)*q(3), 2*q(2)*q(3) - 2*q(0)*q(1);
-      2*q(1)*q(3) - 2*q(0)*q(2), 2*q(2)*q(3) + 2*q(0)*q(1), 1 - 2*q(1)*q(1) - 2*q(2)*q(2)];
+  M = QuatRotMat(q(:,ii) );
   inertial_acc(:,ii) = M*acc;
-  inertial_accel(2,ii) = inertial_accel(2,ii) + 9.81;
-  predictedState(1:3,ii) = pos(:,ii-1) + vel(:,ii-1)*dt;
-  predictedState(4:6,ii) = vel(:,ii-1) + inertial_accel * dt;
+  inertial_acc(3,ii) = inertial_acc(3,ii) + 9.81;
+  pos(:,ii) = pos(:,ii-1) + vel(:,ii-1)*dt;
+  vel(:,ii) = vel(:,ii-1) + inertial_acc(:,ii) * dt;
   
-
-  estAttitude(:,ii) = quat2eul(estQuat(:, ii)', 'ZYX');
+ 
+  estAttitude(ii,:) = quat2eul(estQuat(:, ii)', 'ZYX');
   RbgPrime = zeros(3,3);
-  RbgPrime(1, 1) = -cos(estAttitude(2)) * sin(estAttitude(1));
-  RbgPrime(1, 2) = -sin(estAttitude(3)) * sin(estAttitude(2)) * sin(estAttitude(1)) - cos(estAttitude(3)) * cos(estAttitude(1));
-  RbgPrime(1, 3) = -cos(estAttitude(3)) * sin(estAttitude(2)) * sin(estAttitude(1)) + sin(estAttitude(3)) * cos(estAttitude(1));
-  RbgPrime(2, 1) = cos(estAttitude(2)) * cos(estAttitude(1));
-  RbgPrime(2, 2) = sin(estAttitude(3)) * sin(estAttitude(2)) * cos(estAttitude(1)) - cos(estAttitude(3)) * sin(estAttitude(1));
-  RbgPrime(2, 3) = cos(estAttitude(3)) * sin(estAttitude(2)) * cos(estAttitude(1)) + sin(estAttitude(3)) * sin(estAttitude(1));
-
+  RbgPrime(1, 1) = -cos(estAttitude(ii,2)) * sin(estAttitude(ii,1));
+  RbgPrime(1, 2) = -sin(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * sin(estAttitude(ii,1)) - cos(estAttitude(ii,3)) * cos(estAttitude(ii,1));
+  RbgPrime(1, 3) = -cos(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * sin(estAttitude(ii,1)) + sin(estAttitude(ii,3)) * cos(estAttitude(ii,1));
+  RbgPrime(2, 1) = cos(estAttitude(ii,2)) * cos(estAttitude(ii,1));
+  RbgPrime(2, 2) = sin(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * cos(estAttitude(ii,1)) - cos(estAttitude(ii,3)) * sin(estAttitude(ii,1));
+  RbgPrime(2, 3) = cos(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * cos(estAttitude(ii,1)) + sin(estAttitude(ii,3)) * sin(estAttitude(ii,1));
     
   gPrime = eye(7);
 
@@ -161,16 +169,25 @@ for ii = 2:length(gyro_000)
   gPrime(4, 7) = helper_matrix(1) * dt;
   gPrime(5, 7) = helper_matrix(2) * dt;
   gPrime(6, 7) = helper_matrix(3) * dt;
-  gTranspose = gPrime';
-  ekfCov = gPrime * ekfCov * gTranspose + Q;
+  ekfCov = gPrime * ekfCov * gPrime' + Q;
+  
+  % gps update
+  if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
+        hprime = eye(6,7);
+        z = [gps_pos_000(:,jj) - gps_pos_bias; gps_vel_000(:,jj)];
+        zFromX = [pos(:,ii); vel(:,ii)]; % concatenate pos and vel
 
-  if(mod(ii, 100) == 1 && jj <= length(gps_pos_000))
-        
+        toInvert = hprime*ekfCov*hprime' + R_gps;
+        K = ekfCov * hprime' / toInvert;
+
+        updated_state = [pos(:,ii); vel(:,ii); 0] + K*(z - zFromX); 
+        pos(:,ii) = updated_state(1:3);
+        vel(:,ii) = updated_state(4:6);
+
+        ekfCov = (eye(7) - K*hprime)*ekfCov;
+
         jj = jj + 1;
   end
-  
-  pos(:,ii) = predictedState(1:3,ii);
-  vel(:,ii) = predictedState(4:6,ii);
 
 end
 %% position with ekf_mex
@@ -192,7 +209,7 @@ for ii = 1:length(imu_gyro)
     
     [pos(:,ii), vel(:,ii), q(:,ii), inertial_acc(:,ii)] = ekf_mex("get_ekfState");
 end
-
+%% position plot
 figure(1)
 pos_err = gt_pos - pos;
 plot(pos_err');
