@@ -1,14 +1,6 @@
 clear all
 close all
 
-gps_pos = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
-gps_vel = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
-%{
-GDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/GDOP");
-HDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/HDOP");
-PDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/PDOP");
-VDOP = h5read("sensor_records.hdf5", "/trajectory_0000/gps/VDOP");
-%}
 gps_pos_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
 gps_vel_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
 acc_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/accelerometer");
@@ -17,28 +9,20 @@ gt_pos = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/position");
 gt_vel = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/velocity");
 gt_attitude = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/attitude");
 
-imu_acc = h5read("sensor_records.hdf5", "/trajectory_0000/imu/accelerometer");
-imu_gyro = h5read("sensor_records.hdf5", "/trajectory_0000/imu/gyroscope");
-gt_pos = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/position");
-gt_vel = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/velocity");
-gt_attitude = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/attitude");
-gt_angvel = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/angular_velocity");
-gt_acc = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/acceleration");
-
 imu_acc_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/accelerometer","init_bias_est"); 
 imu_gyro_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/gyroscope","init_bias_est"); 
-gps_pos_bias = gps_pos(:,1); % sembra che ci sia un bias soprattutto lunzo z
+gps_pos_bias = gps_pos_000(:,1); % sembra che ci sia un bias soprattutto lunzo z
 
 %% TRUE ATTITUDE VS ESTIMATED ATTITUDE
 
 figure(3)
 subplot(2, 1, 1)
-plot(gt_attitude');
+plot((gt_attitude - ekf_quat)');
 title("true attitude");
 legend("true q0", "true qx", "true qy", "true qz");
 
 subplot(2, 1, 2)
-plot(q');
+plot(ekf_quat');
 title("estimated attitude");
 legend("kf q0", "kf qx", "kf qy", "kf qz");
 %% ATTITUDE ERROR
@@ -71,6 +55,8 @@ estQuat(1, :) = 1;
 
 dt = 0.01;
 
+
+
 for ii = 2:length(gyro_000)
     gyro = gyro_000(:, ii - 1) - imu_gyro_bias;
     acc = acc_000(:,ii-1) - imu_acc_bias;
@@ -100,6 +86,8 @@ for ii = 2:length(gyro_000)
     z = eul2quat(euler, 'ZYX');
     estQuat(:, ii) = estQuat(:, ii) + k_at * (z' - H_at * estQuat(:, ii));
     ekfCov_at = ekfCov_pred - k_at * H_at * ekfCov_pred;
+    
+    
 end
 
 figure(1)
@@ -117,9 +105,13 @@ figure(2)
 plot((gt_attitude - estQuat)');
 title("error");
 
+figure(3)
+plot((gt_attitude - ekf_quat)');
+title("error");
+
 % converting estimated quaternions to euler angles and comparing it with accel
 % measurements
-figure(3)
+figure(4)
 subplot(2, 1, 1)
 plot(rad2deg(quat2eul(estQuat', 'ZYX')));
 title("estimated euler angles");
@@ -130,85 +122,28 @@ plot(rad2deg(accellData'));
 title("accellerometer data");
 legend("pitch", "roll");
 
-%% position
-%reused estQuat from previous section, attitude estimation is independent from position 
-q = estQuat;
-ekfCov = eye(7);
+%% simulation with Estimator class
 
-Q = eye(7)*0.5^2;   %model covariance
-Q(7,7) = 0.095^2;   %related to yaw
-Q = Q * dt;
-
-R_gps = zeros(6,6); %GPS noise matrix
-R_gps(1,1) = 0.1^2;
-R_gps(2,2) = 0.1^2;
-R_gps(3,3) = 0.3^2;
-R_gps(4,4) = 0.1^2;
-R_gps(5,5) = 0.1^2;
-R_gps(6,6) = 0.3^2;
-
-
-pos_err = zeros(3,8818);
-attitude_error = zeros(4, 8818);
-pos = zeros(3, 8818);
-vel = zeros(3, 8818);
-inertial_acc = zeros(3, 8818);
-
-predicted_state = zeros(6,8818);
+ekf = Estimator([0,0,0,0,0,0,0]', eye(7), [1,0,0,0]', imu_acc_bias, imu_gyro_bias);
+ekf_quat = zeros(4,length(gyro_000));
+ekf_quat(1,1) = 1;
+ekf_pos = zeros(3,length(gyro_000));
 jj = 1;
-for ii = 2:length(gyro_000)
-  gyro = gyro_000(:, ii - 1) - imu_gyro_bias;
-  acc = acc_000(:,ii-1) - imu_acc_bias;
+for ii = 1:length(gyro_000)
+  gyro = gyro_000(:, ii);
+  acc = acc_000(:,ii);
   
-  %imu predict
-  M = QuatRotMat(q(:,ii) );
-  inertial_acc(:,ii) = M*acc;
-  inertial_acc(3,ii) = inertial_acc(3,ii) + 9.81;
-  pos(:,ii) = pos(:,ii-1) + vel(:,ii-1)*dt;
-  vel(:,ii) = vel(:,ii-1) + inertial_acc(:,ii) * dt;
-  
- 
-  estAttitude(ii,:) = quat2eul(estQuat(:, ii)', 'ZYX');
-  RbgPrime = zeros(3,3);
-  RbgPrime(1, 1) = -cos(estAttitude(ii,2)) * sin(estAttitude(ii,1));
-  RbgPrime(1, 2) = -sin(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * sin(estAttitude(ii,1)) - cos(estAttitude(ii,3)) * cos(estAttitude(ii,1));
-  RbgPrime(1, 3) = -cos(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * sin(estAttitude(ii,1)) + sin(estAttitude(ii,3)) * cos(estAttitude(ii,1));
-  RbgPrime(2, 1) = cos(estAttitude(ii,2)) * cos(estAttitude(ii,1));
-  RbgPrime(2, 2) = sin(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * cos(estAttitude(ii,1)) - cos(estAttitude(ii,3)) * sin(estAttitude(ii,1));
-  RbgPrime(2, 3) = cos(estAttitude(ii,3)) * sin(estAttitude(ii,2)) * cos(estAttitude(ii,1)) + sin(estAttitude(ii,3)) * sin(estAttitude(ii,1));
-    
-  gPrime = eye(7);
-
-  gPrime(1, 4) = dt;
-  gPrime(2, 5) = dt;
-  gPrime(3, 6) = dt;
-
-  helper_matrix = RbgPrime * acc;
-  gPrime(4, 7) = helper_matrix(1) * dt;
-  gPrime(5, 7) = helper_matrix(2) * dt;
-  gPrime(6, 7) = helper_matrix(3) * dt;
-  ekfCov = gPrime * ekfCov * gPrime' + Q;
+  ekf.predict(acc,gyro);
   
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
-        hprime = eye(6,7);
-        z = [gps_pos_000(:,jj) - gps_pos_bias; gps_vel_000(:,jj)];
-        zFromX = [pos(:,ii); vel(:,ii)]; % concatenate pos and vel
-
-        toInvert = hprime*ekfCov*hprime' + R_gps;
-        K = ekfCov * hprime' / toInvert;
-
-        updated_state = [pos(:,ii); vel(:,ii); 0] + K*(z - zFromX); 
-        pos(:,ii) = updated_state(1:3);
-        vel(:,ii) = updated_state(4:6);
-
-        ekfCov = (eye(7) - K*hprime)*ekfCov;
-
+        ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj));
         jj = jj + 1;
   end
-
+  ekf_pos(:,ii) = ekf.ekfState(1:3);
+  ekf_quat(:,ii) = ekf.xt_at;
 end
-%% position with ekf_mex
+%% simulation with ekf_mex
 pos_err = zeros(3,8818);
 attitude_error = zeros(4, 8818);
 pos = zeros(3, 8818);
@@ -217,11 +152,11 @@ q = zeros(4, 8818);
 omega = zeros(3, 8818);
 inertial_acc = zeros(3, 8818);
 jj = 1;
-for ii = 1:length(imu_gyro)
-    ekf_mex("predict", imu_acc(:,ii), imu_gyro(:,ii));
+for ii = 1:length(gyro_000)
+    ekf_mex("predict", acc_000(:,ii), gyro_000(:,ii));
     
-    if(mod(ii, 100) == 1 && jj <= length(gps_pos))
-        ekf_mex("updateFromGps", (gps_pos(:,jj) - gps_pos_bias), gps_vel(:,jj));
+    if(mod(ii, 100) == 1 && jj <= length(gps_pos_000))
+        ekf_mex("updateFromGps", (gps_pos_000(:,jj) - gps_pos_bias), gps_vel_000(:,jj));
         jj = jj + 1;
     end
     
@@ -229,7 +164,7 @@ for ii = 1:length(imu_gyro)
 end
 %% position plot
 figure(1)
-pos_err = gt_pos - pos;
+pos_err = gt_pos - ekf_pos;
 plot(pos_err');
 title("position error");
 legend("error x", "error y", "error z");

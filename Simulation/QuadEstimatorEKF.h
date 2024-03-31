@@ -31,6 +31,7 @@ class QuadEstimatorEKF  {
     MatrixXf R_at;
     VectorXf predState;  // predicted state
     Vector3f inertial_accel;
+
     float dtIMU = 0.01f;
     float attitudeTau = 0.5;
 
