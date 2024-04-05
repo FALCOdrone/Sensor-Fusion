@@ -16,6 +16,9 @@ classdef Estimator < handle
         Nstate
         imu_acc_bias
         imu_gyro_bias
+
+        gps_residual
+        attitude_imu_residual
     end
     
     methods
@@ -94,6 +97,10 @@ classdef Estimator < handle
             obj.xt_at = obj.xt_at + k_at * (z' - H_at * obj.xt_at);
             obj.ekfCov_at = obj.ekfCov_pred - k_at * H_at * obj.ekfCov_pred;
             obj.estAttitude = quat2eul(obj.xt_at', 'ZYX');
+            
+            S = H_at * obj.ekfCov_at * H_at' + obj.R_at;
+            y = z' - H_at * obj.xt_at;
+            obj.attitude_imu_residual = y' / S * y;
         end
         
         function updateFromGps(obj, gps_pos,gps_vel)
@@ -108,7 +115,10 @@ classdef Estimator < handle
             K = obj.ekfCov * H' / toInvert;
             obj.ekfState = obj.ekfState + K*(z - zFromX);
             obj.ekfCov = (eye(obj.Nstate) - K*H)*obj.ekfCov;
-        end 
+            if H == eye(6,7)
+                obj.gps_residual = (z - H*obj.ekfState)' / toInvert * (z - H*obj.ekfState);      % normalized gps residual
+            end 
+        end
 
         function RbgPrime = GetRbgPrime(obj)
 

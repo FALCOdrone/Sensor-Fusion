@@ -128,6 +128,9 @@ ekf = Estimator([0,0,0,0,0,0,0]', eye(7), [1,0,0,0]', imu_acc_bias, imu_gyro_bia
 ekf_quat = zeros(4,length(gyro_000));
 ekf_quat(1,1) = 1;
 ekf_pos = zeros(3,length(gyro_000));
+ekf_attitude_imu_residual = zeros(4, length(gyro_000));
+ekf_gps_residual = zeros(6, length(gyro_000));
+
 jj = 1;
 for ii = 1:length(gyro_000)
   gyro = gyro_000(:, ii);
@@ -142,6 +145,8 @@ for ii = 1:length(gyro_000)
   end
   ekf_pos(:,ii) = ekf.ekfState(1:3);
   ekf_quat(:,ii) = ekf.xt_at;
+  ekf_attitude_imu_residual(:,ii) = ekf.attitude_imu_residual;
+  ekf_gps_residual(:,ii) = ekf.gps_residual;
 end
 %% simulation with ekf_mex
 pos_err = zeros(3,8818);
@@ -179,3 +184,10 @@ subplot(2, 1, 2)
 plot(pos');
 title("kf pos");
 legend("x", "y", "z");
+
+%% residuals plot
+
+figure(1)
+plot(ekf_attitude_imu_residual');
+figure(2)
+plot(ekf_gps_residual');
