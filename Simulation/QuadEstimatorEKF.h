@@ -186,7 +186,7 @@ class QuadEstimatorEKF  {
       
       // prediction step
       A = A.setIdentity() + dt * .5f * B;
-      xp = A * xt_at;
+      xt_at = A * xt_at;
       
       ekfCov_pred = A * ekfCov_at * A.transpose() + Q_at;
       K_at = ekfCov_pred * H_at.transpose() * (H_at * ekfCov_pred * H_at.transpose() + R_at).inverse();
