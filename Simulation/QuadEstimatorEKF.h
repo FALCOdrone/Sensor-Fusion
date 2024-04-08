@@ -29,7 +29,6 @@ class QuadEstimatorEKF  {
     Vector4f ut;  // control vector
     MatrixXf R;  // noise measurment matrix
     MatrixXf R_at;
-    VectorXf predState;  // predicted state
     Vector3f inertial_accel;
 
     float dtIMU = 0.01f;
@@ -52,10 +51,11 @@ class QuadEstimatorEKF  {
 
     VectorXf xt_at;  // attitude estimation quaternion state
    
-    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, float AccX, float AccY, float AccZ, float GyroX, float GyroY, float GyroZ) {   // for ekf
-      acc = Vector3f(AccX, AccY, AccZ);  // data coming from accelerometer
-      gyro = Vector3f(GyroX, GyroY, GyroZ); // data coming from gyro
+    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, VectorXf AccXYZ, VectorXf GyroXYZ, VectorXf imu_acc_bias, VectorXf imu_gyro_bias) {   // for ekf
+
       ekfCov.setIdentity(Nstate, Nstate);
+      acc = AccXYZ - imu_acc_bias;
+      gyro = GyroXYZ - imu_gyro_bias;
 
       ut(0) = acc.x();  //  control vector
       ut(1) = acc.y();
@@ -73,8 +73,6 @@ class QuadEstimatorEKF  {
       Q(5, 5) = powf(QVelZStd, 2);
       Q(6, 6) = powf(QYawStd, 2);
       Q *= dtIMU;
-
-      predState.setZero(Nstate);
 
       R_GPS.setZero(6, 6);
       R_GPS(0, 0) = R_GPS(1, 1) = powf(GPSPosXYStd, 2);
@@ -104,13 +102,6 @@ class QuadEstimatorEKF  {
       // initial conditions of ekfState 
       ekfState = ini_state;
     }
-
-    float Roll() {return this->rollEst;}
-
-    float Pitch() {return this->pitchEst;}
-
-    float Yaw() {return this->yawEst;}
-
 
     VectorXf Euler1232EP(Vector3f p) {  // from euler angle to quaternion in XYZ    
       VectorXf q(4);
@@ -146,7 +137,6 @@ class QuadEstimatorEKF  {
       return q;
     }
 
-
     Vector3f EPEuler123(VectorXf q) {  // from quaternions to euler angles in XYZ
       float q0 = q(0);
       float q1 = q(1);
@@ -173,22 +163,6 @@ class QuadEstimatorEKF  {
       return Vector3f(yaw, pitch, roll);
     }
 
-    void attitude_integration(float dt) {
-         // Gyroscope rates
-      double wx = gyro.x();
-      double wy = gyro.y();
-      double wz = gyro.z();
-
-    // Quaternion rates
-      VectorXf qDot(4);
-      qDot << 0.5 * (-wx * xt_at(1) - wy * xt_at(2) - wz * xt_at(3)),
-            0.5 * (wx * xt_at(0) + wy * xt_at(3) - wz * xt_at(2)),
-            0.5 * (-wx * xt_at(3) + wy * xt_at(0) + wz * xt_at(1)),
-            0.5 * (wx * xt_at(2) - wy * xt_at(1) + wz * xt_at(0));
-
-      xt_at = xt_at + qDot * dt;
-    }
-
     void kf_attitudeEstimation(float dt) {
       MatrixXf A(4, 4);
       MatrixXf B(4, 4);
@@ -196,43 +170,35 @@ class QuadEstimatorEKF  {
       
       // estimating roll and pitch with accellerometer
       float accelPitch = asinf(-acc.x() / (-9.81f));
-      float accelRoll = asinf(acc.y() / (-9.81f * cos(estAttitude(1)) ) );
+      float accelRoll = asinf(acc.y() / (-9.81f * cos(accelPitch) ) );
 
       B << 0, -gyro.x(), -gyro.y(), -gyro.z(),
       gyro.x(), 0, gyro.z(), -gyro.y(),
       gyro.y(), -gyro.z(), 0, gyro.x(),
       gyro.z(), gyro.y(), -gyro.x(), 0;
 
-      // need to do a kf for estimating roll, pitch and yaw. Roll->phi, Pitch->teta, Yaw->psi
+      /*  other convention 
+        B << 0, -gyro.x(), -gyro.y(), -gyro.z(),
+            gyro.x(), 0, -gyro.z(), gyro.y(),
+            gyro.y(), gyro.z(), 0, -gyro.x(),
+            gyro.z(), -gyro.y(), gyro.x(), 0;
+      */
+      
+      // prediction step
       A = A.setIdentity() + dt * .5f * B;
-      xp = A * xt_at;
-      xt_at = xp;
-      //xt_at(1) = -xt_at(1);
-      //xt_at(3) = -xt_at(3);
-      /*ekfCov_pred = A * ekfCov_at * A.transpose() + Q_at;
+      xt_at = A * xt_at;
+      
+      ekfCov_pred = A * ekfCov_at * A.transpose() + Q_at;
       K_at = ekfCov_pred * H_at.transpose() * (H_at * ekfCov_pred * H_at.transpose() + R_at).inverse();
      
+      // update step
       Vector3f p = Vector3f(estAttitude(0), accelPitch, accelRoll);
-      z = Euler1232EP(p);
+      z = Euler3212EP(p);
       xt_at = xp + K_at * (z - H_at * xp);
       ekfCov_at = ekfCov_pred - K_at * H_at * ekfCov_pred;
-
-      xt_at = xp;                       //using only gyro integration for testing                                                       
-      estAttitude = EPEuler123(xt_at);  // attitude vector with euler angles   
-      ekfState(6) = estAttitude(0);*/
-    
-      // complimentary filter part
-      //float accelRoll = atan2f(acc.y(), acc.z());
-      //float accelPitch = atan2f(-acc.x(), -9.81f);
-      Vector3f predictedAttitude = EPEuler321(xp); 
-      
-      // FUSE INTEGRATION AND UPDATE
-      /*estAttitude(2) = attitudeTau / (attitudeTau + dt) * (predictedAttitude(2))+dt / (attitudeTau + dt) * accelRoll;
-      //estAttitude(2) = predictedAttitude(2);
-      estAttitude(1) = attitudeTau / (attitudeTau + dt) * (predictedAttitude(1))+dt / (attitudeTau + dt) * accelPitch;
-      estAttitude(0) = predictedAttitude(0);
-      xt_at = Euler3212EP(estAttitude); */
-      
+                                                    
+      estAttitude = EPEuler321(xt_at);  // attitude vector with euler angles   
+      ekfState(6) = estAttitude(0);      
     }
 
     void complimentary_filter_attitude_estimation(float dt){
@@ -241,9 +207,6 @@ class QuadEstimatorEKF  {
       float predictedRoll = rollEst + dt * dq(0);
       float predictedPitch = pitchEst + dt * dq(1);
       ekfState(6) = ekfState(6) + dt * dq(2);
-      
-
-      /////////////////////////////// END STUDENT CODE ////////////////////////////
       
       // CALCULATE UPDATE
       double accelRoll = atan2f(acc.y(), acc.z());
@@ -342,143 +305,43 @@ class QuadEstimatorEKF  {
       return m;
     }
 
-    void predict(float dt) {
-      MatrixXf R_bg(3, 3);
-      MatrixXf R_bg_quat(3, 3);
-      MatrixXf A(Nstate, Nstate);   
-      MatrixXf RbgPrime(3,3);
-
-      A.setIdentity();
-      A(0, 3) = A(1, 4) = A(2, 5) = dt;
-
-      MatrixXf m(Nstate, 3);
-      m.setZero();
-
-      R_bg_quat = quatRotMat_2(xt_at).transpose();
-      
-      for(int i = 0; i < 3; i++) {
-          m(3, i) = R_bg(0, i);
-          m(4, i) = R_bg(1, i);
-          m(5, i) = R_bg(2, i);
-       }
-
-      MatrixXf B(Nstate, 3); 
-      B = m * dt;
-
-      VectorXf ut_2(3);
-      ut_2(0) = ut(0); 
-      ut_2(1) = ut(1); 
-      ut_2(2) = ut(2); 
-      inertial_accel = R_bg_quat * ut_2;
-
-
-      predState = A * predState + B * ut_2;  // predicting state
-      ekfState = predState;
-      
-      RbgPrime = GetRbgPrime();
-
-      MatrixXf gPrime(Nstate, Nstate);
-      gPrime.setIdentity();
-      MatrixXf m1(Nstate, Nstate);
-
-      float sv1 = 0.0f, sv2 = 0.0f, sv3 = 0.0f;
-
-      for (int i = 0; i < 3; i++) {
-        sv1 += RbgPrime(0, i) * ut_2(i);   // scalar product of RbgPrime with control vector
-        sv2 += RbgPrime(1, i) * ut_2(i);
-        sv3 += RbgPrime(2, i) * ut_2(i);
-      }
-
-      gPrime(3, Nstate - 1) = sv1 * dt;
-      gPrime(4, Nstate - 1) = sv2 * dt;
-      gPrime(5, Nstate - 1) = sv3 * dt;
-      gPrime(0, 3) = gPrime(1, 4) = gPrime(2, 5) = dt;
-      
-      m1 = gPrime * ekfCov;
-
-      MatrixXf m2(Nstate, Nstate);
-      gPrime.transposeInPlace();
-      m2 = m1 * gPrime;
-
-      ekfCov_pred = m2 + Q;
-    }
-
-    VectorXf PredictState(VectorXf curState, float dt, Vector3f accel, Vector3f gyro){
+    VectorXf PredictState(VectorXf curState, float dt){
   
-    VectorXf predictedState = curState;
+        VectorXf predictedState = curState;
 
-    ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
-    MatrixXf R_bg(3, 3);
-    R_bg = quatRotMat(xt_at);
-    inertial_accel = R_bg*accel;
-    inertial_accel(2) = inertial_accel(2) + 9.81; //remove gravity
+        MatrixXf R_bg(3, 3);
+        R_bg = quatRotMat(xt_at);
+        inertial_accel = R_bg*acc;
+        inertial_accel(2) = inertial_accel(2) + 9.81; //remove gravity
 
-    predictedState(0) = curState(0) + curState(3)* dt;
-    predictedState(1) = curState(1) + curState(4) * dt;
-    predictedState(2) = curState(2) + curState(5) * dt;
-    predictedState(3) = curState(3) + inertial_accel(0) * dt;
-    predictedState(4) = curState(4) + inertial_accel(1) * dt;
-    predictedState(5) = curState(5) + inertial_accel(2) * dt;
-    
-    
-    /////////////////////////////// END STUDENT CODE ////////////////////////////
+        predictedState(0) = curState(0) + curState(3)* dt;
+        predictedState(1) = curState(1) + curState(4) * dt;
+        predictedState(2) = curState(2) + curState(5) * dt;
+        predictedState(3) = curState(3) + inertial_accel(0) * dt;
+        predictedState(4) = curState(4) + inertial_accel(1) * dt;
+        predictedState(5) = curState(5) + inertial_accel(2) * dt;
 
-    return predictedState;
-    }
-    void predict_2(float dt)
-    {
-    // predict the state forward
-    VectorXf newState = PredictState(ekfState, dt, acc, gyro);
+        // we'll want the partial derivative of the Rbg matrix
+        MatrixXf RbgPrime = GetRbgPrime();
 
-    // Predict the current covariance forward by dt using the current accelerations and body rates as input.
-    // INPUTS: 
-    //   dt: time step to predict forward by [s]
-    //   accel: acceleration of the vehicle, in body frame, *not including gravity* [m/s2]
-    //   gyro: body rates of the vehicle, in body frame [rad/s]
-    //   state (member variable): current state (state at the beginning of this prediction)
-    //   
-    // OUTPUT:
-    //   update the member variable cov to the predicted covariance
+        // we've created an empty Jacobian for you, currently simply set to identity
+        MatrixXf gPrime(7,7);
+        gPrime.setIdentity();
 
-    // HINTS
-    // - update the covariance matrix cov according to the EKF equation.
-    // 
-    // - you may find the current estimated attitude in variables rollEst, pitchEst, state(6).
-    //
-    // - use the class MatrixXf for matrices. To create a 3x5 matrix A, use MatrixXf A(3,5).
-    //
-    // - the transition model covariance, Q, is loaded up from a parameter file in member variable Q
-    // 
-    // - This is unfortunately a messy step. Try to split this up into clear, manageable steps:
-    //   1) Calculate the necessary helper matrices, building up the transition jacobian
-    //   2) Once all the matrices are there, write the equation to update cov.
-    //
-    // - if you want to transpose a matrix in-place, use A.transposeInPlace(), not A = A.transpose()
-    //   
+        gPrime(0, 3) = dt;
+        gPrime(1, 4) = dt;
+        gPrime(2, 5) = dt;
 
-    // we'll want the partial derivative of the Rbg matrix
-    MatrixXf RbgPrime = GetRbgPrime();
+        VectorXf helper_matrix = RbgPrime * acc;
+        gPrime(3, 6) = helper_matrix(0) * dt;
+        gPrime(4, 6) = helper_matrix(1) * dt;
+        gPrime(5, 6) = helper_matrix(2) * dt;
+        MatrixXf gTranspose = gPrime.transpose().eval();
+        ekfCov = gPrime * ekfCov * gTranspose + Q;
 
-    // we've created an empty Jacobian for you, currently simply set to identity
-    MatrixXf gPrime(7,7);
-    gPrime.setIdentity();
+        ekfState = predictedState;
 
-    ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
-    gPrime(0, 3) = dt;
-    gPrime(1, 4) = dt;
-    gPrime(2, 5) = dt;
-
-    VectorXf helper_matrix = RbgPrime * acc;
-    gPrime(3, 6) = helper_matrix(0) * dt;
-    gPrime(4, 6) = helper_matrix(1) * dt;
-    gPrime(5, 6) = helper_matrix(2) * dt;
-    MatrixXf gTranspose = gPrime.transpose().eval();
-    ekfCov = gPrime * ekfCov * gTranspose + Q;
-    
-    
-    /////////////////////////////// END STUDENT CODE ////////////////////////////
-    
-    ekfState = newState;
+        return ekfState;
     }
 
     void update_ekf(VectorXf z, MatrixXf H, MatrixXf R, VectorXf zFromX, float dt) {
