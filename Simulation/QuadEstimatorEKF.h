@@ -51,7 +51,7 @@ class QuadEstimatorEKF  {
 
     VectorXf xt_at;  // attitude estimation quaternion state
    
-    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, VectorXf AccXYZ, VectorXf GyroXYZ, VectorXf imu_acc_bias, VectorXf imu_gyro_bias) {   // for ekf
+    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, Vector3f AccXYZ, Vector3f GyroXYZ, Vector3f imu_acc_bias, Vector3f imu_gyro_bias) {   // for ekf
 
       ekfCov.setIdentity(Nstate, Nstate);
       acc = AccXYZ - imu_acc_bias;
@@ -305,21 +305,21 @@ class QuadEstimatorEKF  {
       return m;
     }
 
-    VectorXf PredictState(VectorXf curState, float dt){
+    VectorXf predict(float dt){
   
-        VectorXf predictedState = curState;
+        VectorXf predictedState = ekfState;
 
         MatrixXf R_bg(3, 3);
         R_bg = quatRotMat(xt_at);
         inertial_accel = R_bg*acc;
         inertial_accel(2) = inertial_accel(2) + 9.81; //remove gravity
 
-        predictedState(0) = curState(0) + curState(3)* dt;
-        predictedState(1) = curState(1) + curState(4) * dt;
-        predictedState(2) = curState(2) + curState(5) * dt;
-        predictedState(3) = curState(3) + inertial_accel(0) * dt;
-        predictedState(4) = curState(4) + inertial_accel(1) * dt;
-        predictedState(5) = curState(5) + inertial_accel(2) * dt;
+        predictedState(0) = ekfState(0) + ekfState(3)* dt;
+        predictedState(1) = ekfState(1) + ekfState(4) * dt;
+        predictedState(2) = ekfState(2) + ekfState(5) * dt;
+        predictedState(3) = ekfState(3) + inertial_accel(0) * dt;
+        predictedState(4) = ekfState(4) + inertial_accel(1) * dt;
+        predictedState(5) = ekfState(5) + inertial_accel(2) * dt;
 
         // we'll want the partial derivative of the Rbg matrix
         MatrixXf RbgPrime = GetRbgPrime();
@@ -337,8 +337,8 @@ class QuadEstimatorEKF  {
         gPrime(4, 6) = helper_matrix(1) * dt;
         gPrime(5, 6) = helper_matrix(2) * dt;
         MatrixXf gTranspose = gPrime.transpose().eval();
+        
         ekfCov = gPrime * ekfCov * gTranspose + Q;
-
         ekfState = predictedState;
 
         return ekfState;
