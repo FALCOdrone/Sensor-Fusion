@@ -1,10 +1,5 @@
 #include "QuadEstimatorEKF.h"
 
-using namespace Eigen;
-using Eigen::VectorXf;
-using Eigen::MatrixXf;
-
-
 QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, Vector3f AccXYZ, Vector3f GyroXYZ, Vector3f imu_acc_bias, Vector3f imu_gyro_bias) {   // for ekf
 
   ekfCov.setIdentity(Nstate, Nstate);
@@ -68,6 +63,7 @@ VectorXf QuadEstimatorEKF::Euler1232EP(Vector3f p) {  // from euler angle to qua
 
   return q;
 }
+
 
 VectorXf QuadEstimatorEKF::Euler3212EP(Vector3f p) {  // from euler angle to quaternion in ZYX    
   VectorXf q(4);

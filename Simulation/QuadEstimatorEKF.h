@@ -6,8 +6,8 @@
 #define PI 3.14
 
 using namespace Eigen;
-using Eigen::VectorXf;
 using Eigen::MatrixXf;
+using Eigen::VectorXf;
 
 class QuadEstimatorEKF  {
   private:
@@ -28,7 +28,6 @@ class QuadEstimatorEKF  {
     Vector3f acc;  // acc coming from accellerometer
     Vector3f gyro; // gyro measurment
     Vector3f estAttitude;  // attitude estimation vector with yaw, pitch and roll
-    Vector4f ut;  // control vector
     MatrixXf R;  // noise measurment matrix
     MatrixXf R_at;
     Vector3f inertial_accel;
@@ -53,7 +52,7 @@ class QuadEstimatorEKF  {
 
     VectorXf xt_at;  // attitude estimation quaternion state
    
-    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, Vector3f AccXYZ, Vector3f GyroXYZ, Vector3f imu_acc_bias, Vector3f imu_gyro_bias);   // for ekf
+    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, Vector3f AccXYZ, Vector3f GyroXYZ, Vector3f imu_acc_bias, Vector3f imu_gyro_bias);
     VectorXf Euler1232EP(Vector3f p);
     VectorXf Euler3212EP(Vector3f p);
     Vector3f EPEuler123(VectorXf q);
