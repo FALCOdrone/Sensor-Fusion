@@ -26,7 +26,6 @@ class QuadEstimatorEKF  {
     Vector3f acc;  // acc coming from accellerometer
     Vector3f gyro; // gyro measurment
     Vector3f estAttitude;  // attitude estimation vector with yaw, pitch and roll
-    Vector4f ut;  // control vector
     MatrixXf R;  // noise measurment matrix
     MatrixXf R_at;
     Vector3f inertial_accel;
@@ -56,11 +55,6 @@ class QuadEstimatorEKF  {
       ekfCov.setIdentity(Nstate, Nstate);
       acc = AccXYZ - imu_acc_bias;
       gyro = GyroXYZ - imu_gyro_bias;
-
-      ut(0) = acc.x();  //  control vector
-      ut(1) = acc.y();
-      ut(2) = acc.z();
-      ut(3) = gyro.z();
 
       for (int i = 0; i < Nstate; i++)
         ekfCov(i, i) = ini_stdDevs(i) * ini_stdDevs(i);
