@@ -1,10 +1,8 @@
 #include "QuadEstimatorEKF.h"
 
-QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs, Vector3f AccXYZ, Vector3f GyroXYZ, Vector3f imu_acc_bias, Vector3f imu_gyro_bias) {   // for ekf
+QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf
 
   ekfCov.setIdentity(Nstate, Nstate);
-  acc = AccXYZ - imu_acc_bias;
-  gyro = GyroXYZ - imu_gyro_bias;
 
   for (int i = 0; i < Nstate; i++)
     ekfCov(i, i) = ini_stdDevs(i) * ini_stdDevs(i);
@@ -108,10 +106,11 @@ Vector3f QuadEstimatorEKF::EPEuler321(VectorXf q) {  // quaternions to euler in 
   return Vector3f(yaw, pitch, roll);
 }
 
-void QuadEstimatorEKF::kf_attitudeEstimation(float dt) {
+void QuadEstimatorEKF::kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float dt) {
   MatrixXf A(4, 4);
   MatrixXf B(4, 4);
   VectorXf z(4);      
+  VectorXf xp(4);      
   
   // estimating roll and pitch with accellerometer
   float accelPitch = asinf(-acc.x() / (-9.81f));
@@ -142,11 +141,11 @@ void QuadEstimatorEKF::kf_attitudeEstimation(float dt) {
   xt_at = xp + K_at * (z - H_at * xp);
   ekfCov_at = ekfCov_pred - K_at * H_at * ekfCov_pred;
                                                 
-  estAttitude = EPEuler321(xt_at);  // attitude vector with euler angles   
+  estAttitude = EPEuler321(xt_at);  // attitude vector with euler angles yaw pitch roll  
   ekfState(6) = estAttitude(0);      
 }
 
-void QuadEstimatorEKF::complimentary_filter_attitude_estimation(float dt){
+void QuadEstimatorEKF::complimentary_filter_attitude_estimation(Vector3f acc, Vector3f gyro, float dt){
   Vector3f dq = BodyRates_to_EulerVelocities(Vector3f(gyro(2), gyro(1), gyro(0)));
 
   float predictedRoll = rollEst + dt * dq(0);
@@ -250,10 +249,10 @@ Matrix3f QuadEstimatorEKF::quatRotMat_2(VectorXf q){
   return m;
 }
 
-VectorXf QuadEstimatorEKF::predict(float dt){
+VectorXf QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
 
     VectorXf predictedState = ekfState;
-
+    Vector3f inertial_accel;
     MatrixXf R_bg(3, 3);
     R_bg = quatRotMat(xt_at);
     inertial_accel = R_bg*acc;
@@ -352,3 +351,35 @@ void QuadEstimatorEKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
   update_ekf(z, hPrime, R_GPS, zFromX, dt);
 }  
 
+void QuadEstimatorEKF::getAttitude(quat_t *quat, attitude_t *att){
+  unsigned long currentTime = micros();
+  
+  quat->w = xt_at(0);
+  quat->x = xt_at(1);
+  quat->y = xt_at(2);
+  quat->z = xt_at(3);
+  
+  quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000000.0f;
+  quat->t = currentTime;
+
+  att->yaw = estAttitude(0);
+  att->pitch = estAttitude(1);
+  att->roll = estAttitude(2);
+  att->t = currentTime;
+
+}
+
+void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
+  unsigned long currentTime = micros();
+  
+  pos->x = ekfState(0);
+  pos->y = ekfState(1);
+  pos->z = ekfState(2);
+  pos->t = currentTime;
+
+  vel->x = ekfState(3);
+  vel->y = ekfState(4);
+  vel->z = ekfState(5);
+  vel->t = currentTime;
+
+}
