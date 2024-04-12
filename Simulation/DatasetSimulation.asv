@@ -48,26 +48,44 @@ end
 
 % ATTITUDE error plot
 figure(1)
-subplot(3,1,1)
+subplot(2, 1, 1)
 plot((gt_attitude - ekf_quat)');
 title("Error attitude");
 legend("true q0", "true qx", "true qy", "true qz");
 
+subplot(2, 1, 2)
+plot(((gt_attitude - ekf_quat)./(gt_attitude)*100)');
+title("attitude % error");
+legend("q0", "qx", "qy", "qz");
 
 % position error plot
-subplot(3,1,2)
+figure(2)
+subplot(2, 1, 1)
 pos_err = gt_pos - ekf_pos;
 plot(pos_err');
 title("position error");
 legend("error x", "error y", "error z");
 
+subplot(2, 1, 2)
+pos_err_perc = pos_err./gt_pos;
+plot(pos_err_perc');
+title("pos % error");
+legend("x", "y", "z");
+for ii = 1:length(gyro_000)
+
 % velocity error plot
-subplot(3,1,3)
+figure(3)
+subplot(2, 1, 1)
 vel_err = gt_vel - ekf_vel;
 plot(vel_err');
 title("velocity error");
 legend("error vx", "error vy", "error vz");
 
+subplot(2, 1, 2)
+vel_err_perc = vel_err./gt_vel;
+plot(vel_err_perc');
+title("vel % error");
+legend("vx", "vy", "vz");
 
 %% residuals plot
 
