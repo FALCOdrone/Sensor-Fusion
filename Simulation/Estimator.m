@@ -16,15 +16,19 @@ classdef Estimator < handle
         Nstate
         imu_acc_bias
         imu_gyro_bias
-        
-        scaling_factor %for adaptive
+
+        %for adaptive
+        %adjustable process noice
+        scaling_factor 
         scaling_factor_at
         epsilon_max_at
         epsilon_max
         count
-
         gps_residual
         attitude_imu_residual
+
+        %fading memory filter
+        alpha
     end
     
     methods
@@ -42,7 +46,7 @@ classdef Estimator < handle
             obj.Q(7,7) = 0.095^2;   %related to yaw
             obj.Q = obj.Q * obj.dt;
             obj.ekfCov_at = eye(4);
-            obj.Q_at = eye(4) * 0.000001; 
+            obj.Q_at = eye(4) * 0.00001; 
             obj.R_at = eye(4) * 100; % needs to be settled correctly consulting the datasheet
             obj.R_GPS = zeros(6,6); %GPS noise matrix
             obj.R_GPS(1,1) = 0.1^2;
@@ -52,20 +56,27 @@ classdef Estimator < handle
             obj.R_GPS(5,5) = 0.1^2;
             obj.R_GPS(6,6) = 0.3^2;
 
-            obj.scaling_factor=1000; %for adaptive
+            obj.imu_acc_bias = imu_acc_bias;
+            obj.imu_gyro_bias = imu_gyro_bias;
+
+            %for adaptive
+            %adjustable process noice
+            obj.scaling_factor=1000; 
             obj.scaling_factor_at=1000;
             obj.epsilon_max=4;
             obj.epsilon_max_at=4;
             obj.count=0;
+            %Fading memory filter
+            obj.alpha= 1.05; %stay near 1 but >1 like 1.05
+           
 
-            obj.imu_acc_bias = imu_acc_bias;
-            obj.imu_gyro_bias = imu_gyro_bias;
+       
         end
         
-        function predict(obj, acc, gyro)
+        function predict(obj, acc, gyro, fading) %fading parameter allow to use or not use the faind memory filter
             acc = acc - obj.imu_acc_bias;
             gyro = gyro - obj.imu_gyro_bias;
-            attitude_estimation(obj, acc,gyro);
+            attitude_estimation(obj, acc,gyro, fading);
             M = QuatRotMat(obj.xt_at);
             inertial_acc = M*acc;
             inertial_acc(3) = inertial_acc(3) + 9.81;
@@ -85,7 +96,7 @@ classdef Estimator < handle
                     
         end
         
-        function attitude_estimation(obj,acc,gyro)
+        function attitude_estimation(obj,acc,gyro, fading)
         
             accelPitch = asin(-acc(1) / (-9.81));
             accelRoll = asin(acc(2) / (-9.81 * cos(accelPitch)));
@@ -100,7 +111,13 @@ classdef Estimator < handle
         
             % update
             H_at = eye(4);
-            obj.ekfCov_pred = A * obj.ekfCov_at * A' + obj.Q_at;
+            
+            if fading == 0
+                obj.ekfCov_pred = A * obj.ekfCov_at * A' + obj.Q_at;
+            elseif fading == 1 %fading memory filter
+                obj.ekfCov_pred = obj.alpha^2 * A * obj.ekfCov_at * A' + obj.Q_at;
+            end
+
             M = H_at * obj.ekfCov_pred * H_at' + obj.R_at;
             k_at = obj.ekfCov_pred * H_at'/M;
             

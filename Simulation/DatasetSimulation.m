@@ -27,13 +27,14 @@ ekf_quat(1,1) = 1;
 ekf_pos = zeros(3,length(gyro_000));
 ekf_attitude_imu_residual = zeros(4, length(gyro_000));
 ekf_gps_residual = zeros(6, length(gyro_000));
-
+%if you want fading memory set fading =1
+fading = 0;
 jj = 1;
 for ii = 1:length(gyro_000)
   gyro = gyro_000(:, ii);
   acc = acc_000(:,ii);
   
-  ekf.predict(acc,gyro);
+  ekf.predict(acc,gyro,fading);
   
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
@@ -47,15 +48,58 @@ for ii = 1:length(gyro_000)
   ekf_gps_residual(:,ii) = ekf.gps_residual;
 end
 
-%% GRAPHS AND ERROR PLOT
+%% X-Y trajectory
+%temporal axis
+time=zeros(1, length(gyro_000));
+for i=1:length(gyro_000)
+    time(i)=(i-1)/100;
+end
+time2=zeros(1,length(gps_pos_000));
+for i=1:length(gps_pos_000)
+    time2(i)=(i-1)/1;
+end
 
+figure(7)
+scatter(gt_pos(1,:)', gt_pos(2,:)') %real trajectory
+hold on
+plot(ekf_pos(1,:)',gt_pos(2,:)',linewidth=2.0) %estimated trajectory
+hold off
+
+%comparison between gps data, estimated position and ground position
+%x
+figure(8)   
+scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"cyan" ) %real trajectory
+hold on
+plot(time, gt_pos(1,:),"green") %estimated trajectory
+plot(time, ekf_pos(1,:),"red")
+hold off
+
+%y
+figure(9)   
+scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"cyan" ) %real trajectory
+hold on
+plot(time, gt_pos(2,:),"green") %estimated trajectory
+plot(time, ekf_pos(2,:),"red")
+hold off
+
+%z
+figure(10)   
+scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"cyan" ) %real trajectory
+hold on
+plot(time, gt_pos(3,:),"green") %estimated trajectory
+plot(time, ekf_pos(3,:),"red")
+hold off
+
+
+
+%% ERROR PLOT
 % ATTITUDE error plot
 figure(1)
 subplot(3,1,1)
+
 plot((gt_attitude - ekf_quat)');
 title("Error attitude");
 legend("true q0", "true qx", "true qy", "true qz");
-
 
 % position error plot
 subplot(3,1,2)
