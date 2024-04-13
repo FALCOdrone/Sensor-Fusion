@@ -18,8 +18,6 @@ classdef Estimator < handle
         imu_gyro_bias
         
         scaling_factor %for adaptive
-        scaling_factor_at
-        epsilon_max_at
         epsilon_max
         count
 
@@ -42,7 +40,7 @@ classdef Estimator < handle
             obj.Q(7,7) = 0.095^2;   %related to yaw
             obj.Q = obj.Q * obj.dt;
             obj.ekfCov_at = eye(4);
-            obj.Q_at = eye(4) * 0.000001; 
+            obj.Q_at = eye(4) * 0.1; 
             obj.R_at = eye(4) * 100; % needs to be settled correctly consulting the datasheet
             obj.R_GPS = zeros(6,6); %GPS noise matrix
             obj.R_GPS(1,1) = 0.1^2;
@@ -53,9 +51,9 @@ classdef Estimator < handle
             obj.R_GPS(6,6) = 0.3^2;
 
             obj.scaling_factor=1000; %for adaptive
-            obj.scaling_factor_at=1000;
+            scaling_factor_at
             obj.epsilon_max=4;
-            obj.epsilon_max_at=4;
+            epsilon_max_at=
             obj.count=0;
 
             obj.imu_acc_bias = imu_acc_bias;
@@ -124,15 +122,15 @@ classdef Estimator < handle
             end
         end
         
-        function updateFromGps(obj, gps_pos,gps_vel,HDOP,VDOP)
+        function updateFromGps(obj, gps_pos,gps_vel,HDOP)
             z = [gps_pos; gps_vel];
             %using HDOP for  R_GPS
-            obj.R_GPS(1,1) = (HDOP*5)^1/2; %formule da verificare
+            obj.R_GPS(1,1) = (HDOP*5)^1/2;
             obj.R_GPS(2,2) = (HDOP*5)^1/2;
-            obj.R_GPS(3,3) = (VDOP*5)^1/2;
+            obj.R_GPS(3,3) = (HDOP*5)^1/2;
             obj.R_GPS(4,4) = (HDOP*5)^1/2;
             obj.R_GPS(5,5) = (HDOP*5)^1/2;
-            obj.R_GPS(6,6) = (VDOP*5)^1/2;
+            obj.R_GPS(6,6) = (HDOP*5)^1/2;
             hPrime = eye(6,7);
             zFromX = obj.ekfState(1:6);
             update(obj, z, hPrime, obj.R_GPS, zFromX);

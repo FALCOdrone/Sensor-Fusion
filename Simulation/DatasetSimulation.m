@@ -3,9 +3,12 @@ clear all
 close all
 
 gps_pos_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
+gps_HDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/HDOP");
+gps_VDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/VDOP"); %noi non dovremmo averlo
 gps_vel_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
 acc_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/accelerometer");
 gyro_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/gyroscope");
+
 %h5disp("sensor_records.hdf5", "/trajectory_0000/groundtruth")
 gt_pos = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/position");
 gt_vel = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/velocity");
@@ -34,7 +37,7 @@ for ii = 1:length(gyro_000)
   
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
-        ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj));
+        ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj),gps_HDOP_00(1,jj),gps_VDOP_00(1,jj));
         jj = jj + 1;
   end
   ekf_pos(:,ii) = ekf.ekfState(1:3);
@@ -60,6 +63,7 @@ pos_err = gt_pos - ekf_pos;
 plot(pos_err');
 title("position error");
 legend("error x", "error y", "error z");
+ylabel("m")
 
 % velocity error plot
 subplot(3,1,3)
@@ -67,15 +71,15 @@ vel_err = gt_vel - ekf_vel;
 plot(vel_err');
 title("velocity error");
 legend("error vx", "error vy", "error vz");
+ylabel("m/s")
 
+%% normalized residuals plot for Bar-shalom Adjustable Process Noise
 
-%% residuals plot
-
-figure(1)
+figure(4)
+subplot(2,1,1)
+plot(ekf_gps_residual(1,:)');
+subplot(2,1,2)
 plot(ekf_attitude_imu_residual');
-figure(2)
-plot(ekf_gps_residual');
-
 
 
 %% simulation with ekf_mex
