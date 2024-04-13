@@ -73,10 +73,10 @@ classdef Estimator < handle
        
         end
         
-        function predict(obj, acc, gyro, fading) %fading parameter allow to use or not use the faind memory filter
+        function predict(obj, acc, gyro, fading,residual) %fading parameter allow to use or not use the faind memory filter
             acc = acc - obj.imu_acc_bias;
             gyro = gyro - obj.imu_gyro_bias;
-            attitude_estimation(obj, acc,gyro, fading);
+            attitude_estimation(obj, acc,gyro, fading, residual);
             M = QuatRotMat(obj.xt_at);
             inertial_acc = M*acc;
             inertial_acc(3) = inertial_acc(3) + 9.81;
@@ -96,7 +96,7 @@ classdef Estimator < handle
                     
         end
         
-        function attitude_estimation(obj,acc,gyro, fading)
+        function attitude_estimation(obj,acc,gyro, fading, residual)
         
             accelPitch = asin(-acc(1) / (-9.81));
             accelRoll = asin(acc(2) / (-9.81 * cos(accelPitch)));
@@ -131,17 +131,18 @@ classdef Estimator < handle
             S = H_at * obj.ekfCov_at * H_at' + obj.R_at;
             y = z' - H_at * obj.xt_at;
             obj.attitude_imu_residual = y' / S * y;
-
-            if obj.attitude_imu_residual > obj.epsilon_max_at
-                obj.Q_at=obj.Q_at*obj.scaling_factor_at;
-                obj.count = obj.count + 1;
-            elseif obj.count > 0
-                obj.Q_at = obj.Q_at / obj.scaling_factor_at;
-                obj.count= obj.count - 1;
+            if residual ==1
+                if obj.attitude_imu_residual > obj.epsilon_max_at
+                    obj.Q_at=obj.Q_at*obj.scaling_factor_at;
+                    obj.count = obj.count + 1;
+                elseif obj.count > 0
+                    obj.Q_at = obj.Q_at / obj.scaling_factor_at;
+                    obj.count= obj.count - 1;
+                end
             end
         end
         
-        function updateFromGps(obj, gps_pos,gps_vel,HDOP,VDOP)
+        function updateFromGps(obj, gps_pos,gps_vel,HDOP,VDOP, residual)
             z = [gps_pos; gps_vel];
             %using HDOP for  R_GPS
             obj.R_GPS(1,1) = (HDOP*5)^1/2; %formule da verificare
@@ -152,10 +153,10 @@ classdef Estimator < handle
             obj.R_GPS(6,6) = (VDOP*5)^1/2;
             hPrime = eye(6,7);
             zFromX = obj.ekfState(1:6);
-            update(obj, z, hPrime, obj.R_GPS, zFromX);
+            update(obj, z, hPrime, obj.R_GPS, zFromX, residual);
         end
         
-        function update(obj, z, H, R, zFromX)
+        function update(obj, z, H, R, zFromX, residual)
             toInvert = H * obj.ekfCov * H' + R;
             K = obj.ekfCov * H' / toInvert;
             obj.ekfState = obj.ekfState + K*(z - zFromX);
@@ -164,12 +165,14 @@ classdef Estimator < handle
             if H == eye(6,7)
                 obj.gps_residual = (z - H*obj.ekfState)' / toInvert * (z - H*obj.ekfState);      % normalized gps residual
             end 
-            if obj.gps_residual > obj.epsilon_max
-                obj.Q = obj.Q*obj.scaling_factor;
-                obj.count = obj.count + 1;
-            elseif obj.count>0 
-                obj.Q = obj.Q/obj.scaling_factor;
-                obj.count = obj.count -1;
+            if residual==1
+                if obj.gps_residual > obj.epsilon_max
+                    obj.Q = obj.Q*obj.scaling_factor;
+                    obj.count = obj.count + 1;
+                elseif obj.count>0 
+                    obj.Q = obj.Q/obj.scaling_factor;
+                    obj.count = obj.count -1;
+                end
             end
                 
         end

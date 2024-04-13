@@ -27,18 +27,19 @@ ekf_quat(1,1) = 1;
 ekf_pos = zeros(3,length(gyro_000));
 ekf_attitude_imu_residual = zeros(4, length(gyro_000));
 ekf_gps_residual = zeros(6, length(gyro_000));
-%if you want fading memory set fading =1
+%if you want fading memory or residual method set the corresponding variable =1
 fading = 0;
+residual=1;
 jj = 1;
 for ii = 1:length(gyro_000)
   gyro = gyro_000(:, ii);
   acc = acc_000(:,ii);
   
-  ekf.predict(acc,gyro,fading);
+  ekf.predict(acc,gyro,fading,residual);
   
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
-        ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj),gps_HDOP_00(1,jj),gps_VDOP_00(1,jj));
+        ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj),gps_HDOP_00(1,jj),gps_VDOP_00(1,jj),residual);
         jj = jj + 1;
   end
   ekf_pos(:,ii) = ekf.ekfState(1:3);
@@ -63,31 +64,38 @@ figure(7)
 scatter(gt_pos(1,:)', gt_pos(2,:)') %real trajectory
 hold on
 plot(ekf_pos(1,:)',gt_pos(2,:)',linewidth=2.0) %estimated trajectory
+title("trajectory")
 hold off
 
 %comparison between gps data, estimated position and ground position
 %x
 figure(8)   
-scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"cyan" ) %real trajectory
+scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"blue" ) %real trajectory
 hold on
 plot(time, gt_pos(1,:),"green") %estimated trajectory
 plot(time, ekf_pos(1,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("x")
 hold off
 
 %y
 figure(9)   
-scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"cyan" ) %real trajectory
+scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"blue" ) %real trajectory
 hold on
 plot(time, gt_pos(2,:),"green") %estimated trajectory
 plot(time, ekf_pos(2,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("y")
 hold off
 
 %z
 figure(10)   
-scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"cyan" ) %real trajectory
+scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"blue" ) %real trajectory
 hold on
 plot(time, gt_pos(3,:),"green") %estimated trajectory
 plot(time, ekf_pos(3,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("z")
 hold off
 
 
