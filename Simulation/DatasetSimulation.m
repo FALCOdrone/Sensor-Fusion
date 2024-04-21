@@ -3,6 +3,7 @@ clear all
 close all
 
 gps_pos_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
+
 gps_HDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/HDOP");
 gps_VDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/VDOP"); %noi non dovremmo averlo
 gps_vel_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
@@ -19,6 +20,112 @@ imu_acc_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/acceleromet
 imu_gyro_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/gyroscope","init_bias_est"); 
 gps_pos_bias = gps_pos_000(:,1); % sembra che ci sia un bias soprattutto lunzo z
 
+
+%% sensor variance estimation
+gt_GPS_pos=zeros(3,length(gps_pos_000(1,:)));
+for i=1:length(gps_pos_000)
+    gt_GPS_pos(:,i)=gt_pos(:,(i-1)*100+1);
+end
+errorpos_gps= gps_pos_000 - gt_GPS_pos;
+
+gt_GPS_vel=zeros(3,length(gps_vel_000(1,:)));
+for i=1:length(gps_vel_000)
+    gt_GPS_vel(:,i)=gt_vel(:,(i-1)*100+1);
+end
+errorvel_gps= gps_vel_000 - gt_GPS_vel;
+
+
+var_gps=zeros(6,1);
+bias_gps=zeros(6,1);
+
+bias_gps(1,1) = mean(errorpos_gps(1,:));
+bias_gps(2,1) = mean(errorpos_gps(2,:));
+bias_gps(3,1) = mean(errorpos_gps(3,:));
+bias_gps(4,1) = mean(errorvel_gps(1,:));
+bias_gps(5,1) = mean(errorvel_gps(2,:));
+bias_gps(6,1) = mean(errorvel_gps(3,:));
+
+var_gps(1,1) = var(errorpos_gps(1,:));
+var_gps(2,1) = var(errorpos_gps(2,:));
+var_gps(3,1) = var(errorpos_gps(3,:));
+var_gps(4,1) = var(errorvel_gps(1,:));
+var_gps(5,1) = var(errorvel_gps(2,:));
+var_gps(6,1) = var(errorvel_gps(3,:));
+gps_pos_bias(1,1)=bias_gps(1,1);
+gps_pos_bias(2,1)=bias_gps(2,1);
+gps_pos_bias(3,1)=bias_gps(3,1);
+
+%% sensor variance estimation 1
+clear all
+gps_pos_001 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/position");
+gt_pos1 = h5read("sensor_records.hdf5", "/trajectory_0001/groundtruth/position");
+gps_HDOP_01 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/HDOP");
+gps_VDOP_01 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/VDOP");
+
+gt_GPS_pos1=zeros(3,length(gps_pos_001(1,:)));
+for i=1:length(gps_pos_001)
+    gt_GPS_pos1(:,i)=gt_pos1(:,(i-1)*100+1);
+end
+errorpos_gps1= gps_pos_001- gt_GPS_pos1;
+
+var_gps1 = var(errorpos_gps1')';
+
+errorpos_gpsNorm1=zeros(3,length(gps_pos_001(1,:)));
+errorpos_gpsNorm1(1,:)=errorpos_gps1(1,:)./gps_HDOP_01;
+errorpos_gpsNorm1(2,:)=errorpos_gps1(2,:)./gps_HDOP_01;
+errorpos_gpsNorm1(3,:)=errorpos_gps1(3,:)./gps_VDOP_01;
+
+var_coeff1 = var(errorpos_gpsNorm1')';
+mean_coeff1 = mean(errorpos_gpsNorm1')';
+
+%% sensor variance estimation 2
+gps_pos_002 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/position");
+gt_pos2 = h5read("sensor_records.hdf5", "/trajectory_0002/groundtruth/position");
+gt_pos2 = h5read("sensor_records.hdf5", "/trajectory_0002/groundtruth/position");
+gps_HDOP_02 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/HDOP");
+gps_VDOP_02 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/VDOP");
+
+gt_GPS_pos2=zeros(3,length(gps_pos_002(1,:)));
+for i=1:length(gps_pos_002)
+    gt_GPS_pos2(:,i)=gt_pos2(:,(i-1)*100+1);
+end
+errorpos_gps2= gps_pos_002- gt_GPS_pos2;
+
+var_gps2 = var(errorpos_gps2')';
+
+errorpos_gpsNorm2=zeros(3,length(gps_pos_002(1,:)));
+errorpos_gpsNorm2(1,:)=errorpos_gps2(1,:)./gps_HDOP_02;
+errorpos_gpsNorm2(2,:)=errorpos_gps2(2,:)./gps_HDOP_02;
+errorpos_gpsNorm2(3,:)=errorpos_gps2(3,:)./gps_VDOP_02;
+
+var_coeff2 = var(errorpos_gpsNorm2')';
+mean_coeff2 = mean(errorpos_gpsNorm2')';
+
+%% sensor variance estimation 3
+gps_pos_003 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/position");
+gt_pos3 = h5read("sensor_records.hdf5", "/trajectory_0003/groundtruth/position");
+gps_HDOP_03 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/HDOP");
+gps_VDOP_03 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/VDOP");
+
+gt_GPS_pos3=zeros(3,length(gps_pos_003(1,:)));
+for i=1:length(gps_pos_003)
+    gt_GPS_pos3(:,i)=gt_pos3(:,(i-1)*100+1);
+end
+errorpos_gps3= gps_pos_003- gt_GPS_pos3;
+
+errorpos_gpsNorm3=zeros(3,length(gps_pos_003(1,:)));
+errorpos_gpsNorm3(1,:)=errorpos_gps3(1,:)./gps_HDOP_03;
+errorpos_gpsNorm3(2,:)=errorpos_gps3(2,:)./gps_HDOP_03;
+errorpos_gpsNorm3(3,:)=errorpos_gps3(3,:)./gps_VDOP_03;
+
+var_gps3=zeros(6,1);
+var_gps3(1,1) = var(errorpos_gps3(1,:));
+var_gps3(2,1) = var(errorpos_gps3(2,:));
+var_gps3(3,1) = var(errorpos_gps3(3,:));
+
+var_coeff3 = var(errorpos_gpsNorm3')';
+mean_coeff3 = mean(errorpos_gpsNorm3')';
+
 %% simulation with Estimator class
 
 ekf = Estimator([0,0,0,0,0,0,0]', eye(7), [1,0,0,0]', imu_acc_bias, imu_gyro_bias);
@@ -29,7 +136,7 @@ ekf_attitude_imu_residual = zeros(4, length(gyro_000));
 ekf_gps_residual = zeros(6, length(gyro_000));
 %if you want fading memory or residual method set the corresponding variable =1
 fading = 0;
-residual=1;
+residual=0;
 jj = 1;
 for ii = 1:length(gyro_000)
   gyro = gyro_000(:, ii);
@@ -49,60 +156,9 @@ for ii = 1:length(gyro_000)
   ekf_gps_residual(:,ii) = ekf.gps_residual;
 end
 
-%% X-Y trajectory
-%temporal axis
-time=zeros(1, length(gyro_000));
-for i=1:length(gyro_000)
-    time(i)=(i-1)/100;
-end
-time2=zeros(1,length(gps_pos_000));
-for i=1:length(gps_pos_000)
-    time2(i)=(i-1)/1;
-end
-
-figure(7)
-scatter(gt_pos(1,:)', gt_pos(2,:)') %real trajectory
-hold on
-plot(ekf_pos(1,:)',gt_pos(2,:)',linewidth=2.0) %estimated trajectory
-title("trajectory")
-hold off
-
-%comparison between gps data, estimated position and ground position
-%x
-figure(8)   
-scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"blue" ) %real trajectory
-hold on
-plot(time, gt_pos(1,:),"green") %estimated trajectory
-plot(time, ekf_pos(1,:),"red")
-legend("GPS ", "ground-t", "ekf")
-title("x")
-hold off
-
-%y
-figure(9)   
-scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"blue" ) %real trajectory
-hold on
-plot(time, gt_pos(2,:),"green") %estimated trajectory
-plot(time, ekf_pos(2,:),"red")
-legend("GPS ", "ground-t", "ekf")
-title("y")
-hold off
-
-%z
-figure(10)   
-scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"blue" ) %real trajectory
-hold on
-plot(time, gt_pos(3,:),"green") %estimated trajectory
-plot(time, ekf_pos(3,:),"red")
-legend("GPS ", "ground-t", "ekf")
-title("z")
-hold off
-
-
-
 %% ERROR PLOT
 % ATTITUDE error plot
-figure(1)
+figure(8)
 subplot(3,1,1)
 
 plot((gt_attitude - ekf_quat)');
@@ -125,9 +181,91 @@ title("velocity error");
 legend("error vx", "error vy", "error vz");
 ylabel("m/s")
 
+%% X-Y trajectory
+%temporal axis
+time=zeros(1, length(gyro_000));
+for i=1:length(gyro_000)
+    time(i)=(i-1)/100;
+end
+time2=zeros(1,length(gps_pos_000));
+for i=1:length(gps_pos_000)
+    time2(i)=(i-1)/1;
+end
+
+figure(1)
+scatter(gt_pos(1,:)', gt_pos(2,:)') %real trajectory
+hold on
+plot(ekf_pos(1,:)',gt_pos(2,:)',linewidth=2.0) %estimated trajectory
+title("trajectory")
+hold off
+
+%comparison between gps data, estimated position and ground position
+%x
+figure(2)   
+scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"blue" ) %real trajectory
+hold on
+plot(time, gt_pos(1,:),"green") %estimated trajectory
+plot(time, ekf_pos(1,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("x")
+hold off
+
+%y
+figure(3)   
+scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"blue" ) %real trajectory
+hold on
+plot(time, gt_pos(2,:),"green") %estimated trajectory
+plot(time, ekf_pos(2,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("y")
+hold off
+
+%z
+figure(4)   
+scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"blue" ) %real trajectory
+hold on
+plot(time, gt_pos(3,:),"green") %estimated trajectory
+plot(time, ekf_pos(3,:),"red")
+legend("GPS ", "ground-t", "ekf")
+title("z")
+hold off
+
+%% Plot fo roll pitch and yaw
+time=zeros(1, length(gyro_000));
+for i=1:length(gyro_000)
+    time(i)=(i-1)/100;
+end
+eulerZYX = quat2eul(ekf_quat','ZYX');
+
+figure(5)   
+plot(time, eulerZYX(:,1)',"green") %estimated trajectory
+hold on
+plot(time, gyro_000(1,:),"red")
+legend("ekf_z ", "ground-z")
+title("Yaw")
+hold off
+
+figure(6)   
+plot(time, eulerZYX(:,2)',"green") %estimated trajectory
+hold on
+plot(time, gyro_000(2,:),"red")
+legend("ekf_Y ", "ground-y")
+title("Pitch")
+hold off
+
+figure(7)   
+plot(time, eulerZYX(:,3)',"green") %estimated trajectory
+hold on
+plot(time, gyro_000(3,:),"red")
+legend("ekf_x ", "ground-x")
+title("Roll")
+hold off
+
+
+
 %% normalized residuals plot for Bar-shalom Adjustable Process Noise
 
-figure(4)
+figure(9)
 subplot(2,1,1)
 plot(ekf_gps_residual(1,:)');
 subplot(2,1,2)

@@ -42,19 +42,28 @@ classdef Estimator < handle
             obj.estAttitude = quat2eul(obj.xt_at', 'ZYX');
             
             obj.dt = 0.01;
-            obj.Q = eye(7)*0.5^2;   %model covariance
+            obj.Q = eye(7);   %model covariance
+            obj.Q(1,1) = 0.5^2 ;      
+            obj.Q(2,2) = 0.5^2;     
+            obj.Q(3,3) = 0.05^2;   
+            obj.Q(4,4) = 0.5^2;    
+            obj.Q(5,5) = 0.5^2; 
+            obj.Q(6,6) = 0.05^2;    
             obj.Q(7,7) = 0.095^2;   %related to yaw
             obj.Q = obj.Q * obj.dt;
             obj.ekfCov_at = eye(4);
-            obj.Q_at = eye(4) * 0.00001; 
+            obj.Q_at = eye(4) * 0.00001;
+
             obj.R_at = eye(4) * 100; % needs to be settled correctly consulting the datasheet
+           
             obj.R_GPS = zeros(6,6); %GPS noise matrix
-            obj.R_GPS(1,1) = 0.1^2;
-            obj.R_GPS(2,2) = 0.1^2;
-            obj.R_GPS(3,3) = 0.3^2;
-            obj.R_GPS(4,4) = 0.1^2;
-            obj.R_GPS(5,5) = 0.1^2;
-            obj.R_GPS(6,6) = 0.3^2;
+            %stimati dai dati
+            obj.R_GPS(1,1) = 0.16;      %precedentemente messi a 0.1^2
+            obj.R_GPS(2,2) = 0.3;       %precedentemente messi a 0.1^2
+            obj.R_GPS(3,3) = 1;         %precedentemente messi a 0.3^2
+            obj.R_GPS(4,4) = 0.1^4;     %come sopra
+            obj.R_GPS(5,5) = 0.1^4;
+            obj.R_GPS(6,6) = 0.1^3;
 
             obj.imu_acc_bias = imu_acc_bias;
             obj.imu_gyro_bias = imu_gyro_bias;
@@ -145,12 +154,12 @@ classdef Estimator < handle
         function updateFromGps(obj, gps_pos,gps_vel,HDOP,VDOP, residual)
             z = [gps_pos; gps_vel];
             %using HDOP for  R_GPS
-            obj.R_GPS(1,1) = (HDOP*5)^1/2; %formule da verificare
-            obj.R_GPS(2,2) = (HDOP*5)^1/2;
-            obj.R_GPS(3,3) = (VDOP*5)^1/2;
-            obj.R_GPS(4,4) = (HDOP*5)^1/2;
-            obj.R_GPS(5,5) = (HDOP*5)^1/2;
-            obj.R_GPS(6,6) = (VDOP*5)^1/2;
+            %obj.R_GPS(1,1) = (HDOP*5)^1/2; %formule da verificare
+            %obj.R_GPS(2,2) = (HDOP*5)^1/2;
+            %obj.R_GPS(3,3) = (VDOP*5)^1/2;
+            %obj.R_GPS(4,4) = (HDOP*5)^1/2;
+            %obj.R_GPS(5,5) = (HDOP*5)^1/2;
+            %obj.R_GPS(6,6) = (VDOP*5)^1/2;
             hPrime = eye(6,7);
             zFromX = obj.ekfState(1:6);
             update(obj, z, hPrime, obj.R_GPS, zFromX, residual);
