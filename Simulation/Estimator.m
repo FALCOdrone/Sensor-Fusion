@@ -65,6 +65,8 @@ classdef Estimator < handle
             obj.R_GPS(5,5) = 0.1^4;
             obj.R_GPS(6,6) = 0.1^3;
 
+            obj.R_Mag = 1.2350;         %estimated by simulation
+
             obj.imu_acc_bias = imu_acc_bias;
             obj.imu_gyro_bias = imu_gyro_bias;
 
@@ -168,6 +170,15 @@ classdef Estimator < handle
             update(obj, z, hPrime, obj.R_GPS, zFromX, residual);
         end
         
+        function updateFromMag(obj, yaw, residual)
+            z = yaw;
+            hPrime = zeros(1,7);
+            hPrime(1,7) = 1;
+            zFromX = obj.ekfState(7);
+            update(obj, z, hPrime, obj.R_Mag, zFromX, residual);
+
+        end    
+
         function update(obj, z, H, R, zFromX, residual)
             toInvert = H * obj.ekfCov * H' + R;
             K = obj.ekfCov * H' / toInvert;

@@ -20,7 +20,10 @@ imu_acc_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/acceleromet
 imu_gyro_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/gyroscope","init_bias_est"); 
 gps_pos_bias = gps_pos_000(:,1); % sembra che ci sia un bias soprattutto lunzo z
 
-
+%simulated magnetometer setup
+imu = imuSensor("accel-gyro-mag");
+imu.Magnetometer.RandomWalk = [0.1,0.1,0.1];
+imu.Magnetometer.NoiseDensity = [0.0125,0.0125,0.0125];
 %% sensor variance estimation
 gt_GPS_pos=zeros(3,length(gps_pos_000(1,:)));
 for i=1:length(gps_pos_000)
@@ -132,8 +135,10 @@ ekf = Estimator([0,0,0,0,0,0,0]', eye(7), [1,0,0,0]', imu_acc_bias, imu_gyro_bia
 ekf_quat = zeros(4,length(gyro_000));
 ekf_quat(1,1) = 1;
 ekf_pos = zeros(3,length(gyro_000));
+ekf_vel = zeros(3,length(gyro_000));
 ekf_attitude_imu_residual = zeros(4, length(gyro_000));
 ekf_gps_residual = zeros(6, length(gyro_000));
+yaw_reading = zeros(1, length(gyro_000));
 %if you want fading memory or residual method set the corresponding variable =1
 fading = 0;
 residual=0;
@@ -143,7 +148,12 @@ for ii = 1:length(gyro_000)
   acc = acc_000(:,ii);
   
   ekf.predict(acc,gyro,fading,residual);
-  
+
+  %simulated magnetometer update (supposing mag frequency equal that of IMU)
+  [~,~,magReadings] = imu([0,0,0],[0,0,0],QuatRotMat(gt_attitude(:,ii)));
+  yaw_reading(ii) = atan2(magReadings(2), magReadings(1));
+  ekf.updateFromMag(yaw_reading(ii), residual);
+
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
         ekf.updateFromGps(gps_pos_000(:,jj) - gps_pos_bias, gps_vel_000(:,jj),gps_HDOP_00(1,jj),gps_VDOP_00(1,jj),residual);
