@@ -150,9 +150,9 @@ for ii = 1:length(gyro_000)
   ekf.predict(acc,gyro,fading,residual);
 
   %simulated magnetometer update (supposing mag frequency equal that of IMU)
-  [~,~,magReadings] = imu([0,0,0],[0,0,0],QuatRotMat(gt_attitude(:,ii)));
-  yaw_reading(ii) = atan2(magReadings(2), magReadings(1));
-  ekf.updateFromMag(yaw_reading(ii), residual);
+  %[~,~,magReadings] = imu([0,0,0],[0,0,0],QuatRotMat(gt_attitude(:,ii)));
+  %yaw_reading(ii) = atan2(magReadings(2), magReadings(1));
+  %ekf.updateFromMag(yaw_reading(ii), residual);
 
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
@@ -190,6 +190,7 @@ plot(vel_err');
 title("velocity error");
 legend("error vx", "error vy", "error vz");
 ylabel("m/s")
+
 
 %% X-Y trajectory
 %temporal axis
@@ -278,6 +279,13 @@ title("Roll")
 hold off
 
 
+% rpy error plot
+figure(8)
+rpy_err = (gt_attitude_EULER - eulerZYX')*360/(2*pi);
+plot(rpy_err');
+title("roll pitch yaw error");
+legend("yaw", "pitch", "roll");
+ylabel("deg")
 
 %% normalized residuals plot for Bar-shalom Adjustable Process Noise
 
