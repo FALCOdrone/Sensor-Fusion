@@ -71,9 +71,9 @@ errorpos_gps1= gps_pos_001- gt_GPS_pos1;
 var_gps1 = var(errorpos_gps1')';
 
 errorpos_gpsNorm1=zeros(3,length(gps_pos_001(1,:)));
-errorpos_gpsNorm1(1,:)=errorpos_gps1(1,:)./gps_HDOP_01;
-errorpos_gpsNorm1(2,:)=errorpos_gps1(2,:)./gps_HDOP_01;
-errorpos_gpsNorm1(3,:)=errorpos_gps1(3,:)./gps_VDOP_01;
+errorpos_gpsNorm1(1,:)=abs(errorpos_gps1(1,:))./gps_HDOP_01;
+errorpos_gpsNorm1(2,:)=abs(errorpos_gps1(2,:))./gps_HDOP_01;
+errorpos_gpsNorm1(3,:)=abs(errorpos_gps1(3,:))./gps_VDOP_01;
 
 var_coeff1 = var(errorpos_gpsNorm1')';
 mean_coeff1 = mean(errorpos_gpsNorm1')';
@@ -94,9 +94,9 @@ errorpos_gps2= gps_pos_002- gt_GPS_pos2;
 var_gps2 = var(errorpos_gps2')';
 
 errorpos_gpsNorm2=zeros(3,length(gps_pos_002(1,:)));
-errorpos_gpsNorm2(1,:)=errorpos_gps2(1,:)./gps_HDOP_02;
-errorpos_gpsNorm2(2,:)=errorpos_gps2(2,:)./gps_HDOP_02;
-errorpos_gpsNorm2(3,:)=errorpos_gps2(3,:)./gps_VDOP_02;
+errorpos_gpsNorm2(1,:)=abs(errorpos_gps2(1,:))./gps_HDOP_02;
+errorpos_gpsNorm2(2,:)=abs(errorpos_gps2(2,:))./gps_HDOP_02;
+errorpos_gpsNorm2(3,:)=abs(errorpos_gps2(3,:))./gps_VDOP_02;
 
 var_coeff2 = var(errorpos_gpsNorm2')';
 mean_coeff2 = mean(errorpos_gpsNorm2')';
@@ -114,9 +114,9 @@ end
 errorpos_gps3= gps_pos_003- gt_GPS_pos3;
 
 errorpos_gpsNorm3=zeros(3,length(gps_pos_003(1,:)));
-errorpos_gpsNorm3(1,:)=errorpos_gps3(1,:)./gps_HDOP_03;
-errorpos_gpsNorm3(2,:)=errorpos_gps3(2,:)./gps_HDOP_03;
-errorpos_gpsNorm3(3,:)=errorpos_gps3(3,:)./gps_VDOP_03;
+errorpos_gpsNorm3(1,:)=abs(errorpos_gps3(1,:))./gps_HDOP_03;
+errorpos_gpsNorm3(2,:)=abs(errorpos_gps3(2,:))./gps_HDOP_03;
+errorpos_gpsNorm3(3,:)=abs(errorpos_gps3(3,:))./gps_VDOP_03;
 
 var_gps3=zeros(6,1);
 var_gps3(1,1) = var(errorpos_gps3(1,:));

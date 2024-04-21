@@ -60,7 +60,7 @@ classdef Estimator < handle
             %stimati dai dati
             obj.R_GPS(1,1) = 0.16;      %precedentemente messi a 0.1^2
             obj.R_GPS(2,2) = 0.3;       %precedentemente messi a 0.1^2
-            obj.R_GPS(3,3) = 1;         %precedentemente messi a 0.3^2
+            obj.R_GPS(3,3) = 1.1;         %precedentemente messi a 0.3^2
             obj.R_GPS(4,4) = 0.1^4;     %come sopra
             obj.R_GPS(5,5) = 0.1^4;
             obj.R_GPS(6,6) = 0.1^3;
@@ -135,7 +135,9 @@ classdef Estimator < handle
             obj.xt_at = obj.xt_at + k_at * (z' - H_at * obj.xt_at);
             obj.ekfCov_at = obj.ekfCov_pred - k_at * H_at * obj.ekfCov_pred;
             obj.estAttitude = quat2eul(obj.xt_at', 'ZYX');
-            
+            %normalization of quaternions
+            obj.xt_at=obj.xt_at/norm (obj.xt_at);
+
             % normalizetion of residuals
             S = H_at * obj.ekfCov_at * H_at' + obj.R_at;
             y = z' - H_at * obj.xt_at;
@@ -149,6 +151,7 @@ classdef Estimator < handle
                     obj.count= obj.count - 1;
                 end
             end
+            
         end
         
         function updateFromGps(obj, gps_pos,gps_vel,HDOP,VDOP, residual)
