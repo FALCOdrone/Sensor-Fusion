@@ -212,9 +212,9 @@ hold off
 %comparison between gps data, estimated position and ground position
 %x
 figure(2)   
-scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), ekf.R_GPS(1,1),"blue" ) %real trajectory
+scatter(time2, gps_pos_000(1,:)-gps_pos_bias(1,1), 1,"blue" )
 hold on
-plot(time, gt_pos(1,:),"green") %estimated trajectory
+plot(time, gt_pos(1,:),"green") 
 plot(time, ekf_pos(1,:),"red")
 legend("GPS ", "ground-t", "ekf")
 title("x")
@@ -222,9 +222,9 @@ hold off
 
 %y
 figure(3)   
-scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), ekf.R_GPS(2,2),"blue" ) %real trajectory
+scatter(time2, gps_pos_000(2,:)-gps_pos_bias(2,1), 1,"blue" )
 hold on
-plot(time, gt_pos(2,:),"green") %estimated trajectory
+plot(time, gt_pos(2,:),"green") 
 plot(time, ekf_pos(2,:),"red")
 legend("GPS ", "ground-t", "ekf")
 title("y")
@@ -232,7 +232,7 @@ hold off
 
 %z
 figure(4)   
-scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), ekf.R_GPS(3,3),"blue" ) %real trajectory
+scatter(time2, gps_pos_000(3,:)-gps_pos_bias(3,1), 1,"blue" ) 
 hold on
 plot(time, gt_pos(3,:),"green") %estimated trajectory
 plot(time, ekf_pos(3,:),"red")
@@ -247,27 +247,33 @@ for i=1:length(gyro_000)
 end
 eulerZYX = quat2eul(ekf_quat','ZYX');
 
-figure(5)   
-plot(time, eulerZYX(:,1)',"green") %estimated trajectory
+gt_attitude_EULER=quat2eul(gt_attitude','ZYX')';
+
+figure(5)  
+plot(time, gyro_000(1,:)-imu_gyro_bias(1,1), "blue", 'LineWidth',0.001) 
 hold on
-plot(time, gyro_000(1,:),"red")
-legend("ekf_z ", "ground-z")
+plot(time, eulerZYX(:,1)',"green") %estimated trajectory
+plot(time, gt_attitude_EULER(1,:),"red")
+
+legend("gyro","ekf_z ", "ground-z")
 title("Yaw")
 hold off
 
-figure(6)   
-plot(time, eulerZYX(:,2)',"green") %estimated trajectory
+figure(6)
+plot(time, gyro_000(2,:)-imu_gyro_bias(2,1), "blue" , 'LineWidth',0.001) 
 hold on
-plot(time, gyro_000(2,:),"red")
-legend("ekf_Y ", "ground-y")
+plot(time, eulerZYX(:,2)',"green") %estimated trajectory
+plot(time, gt_attitude_EULER(2,:),"red")
+legend("gyro","ekf_Y ", "ground-y")
 title("Pitch")
 hold off
 
-figure(7)   
-plot(time, eulerZYX(:,3)',"green") %estimated trajectory
+figure(7)
+plot(time, gyro_000(3,:)-imu_gyro_bias(3,1),"blue" , 'LineWidth',0.001) 
 hold on
-plot(time, gyro_000(3,:),"red")
-legend("ekf_x ", "ground-x")
+plot(time, eulerZYX(:,3)',"green") %estimated trajectory
+plot(time, gt_attitude_EULER(3,:),"red")
+legend("gyro","ekf_x ", "ground-x")
 title("Roll")
 hold off
 
