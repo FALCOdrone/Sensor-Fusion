@@ -3,6 +3,7 @@ clear all
 close all
 
 gps_pos_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/position");
+gps_GDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/GDOP");
 
 gps_HDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/HDOP");
 gps_VDOP_00 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/VDOP"); %noi non dovremmo averlo
@@ -10,7 +11,7 @@ gps_vel_000 = h5read("sensor_records.hdf5", "/trajectory_0000/gps/velocity");
 acc_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/accelerometer");
 gyro_000 = h5read("sensor_records.hdf5", "/trajectory_0000/imu/gyroscope");
 
-%h5disp("sensor_records.hdf5", "/trajectory_0000/groundtruth")
+%h5disp("sensor_records.hdf5", "/trajectory_0000/groundtruth");
 gt_pos = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/position");
 gt_vel = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/velocity");
 gt_acc = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/acceleration");
@@ -18,7 +19,6 @@ gt_attitude = h5read("sensor_records.hdf5", "/trajectory_0000/groundtruth/attitu
 
 imu_acc_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/accelerometer","init_bias_est"); 
 imu_gyro_bias = h5readatt("sensor_records.hdf5","/trajectory_0000/imu/gyroscope","init_bias_est"); 
-gps_pos_bias = gps_pos_000(:,1); % sembra che ci sia un bias soprattutto lunzo z
 
 %simulated magnetometer setup
 imu = imuSensor("accel-gyro-mag");
@@ -54,80 +54,9 @@ var_gps(3,1) = var(errorpos_gps(3,:));
 var_gps(4,1) = var(errorvel_gps(1,:));
 var_gps(5,1) = var(errorvel_gps(2,:));
 var_gps(6,1) = var(errorvel_gps(3,:));
-gps_pos_bias(1,1)=bias_gps(1,1);
-gps_pos_bias(2,1)=bias_gps(2,1);
-gps_pos_bias(3,1)=bias_gps(3,1);
 
-%% sensor variance estimation 1
-clear all
-gps_pos_001 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/position");
-gt_pos1 = h5read("sensor_records.hdf5", "/trajectory_0001/groundtruth/position");
-gps_HDOP_01 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/HDOP");
-gps_VDOP_01 = h5read("sensor_records.hdf5", "/trajectory_0001/gps/VDOP");
+gps_pos_bias=bias_gps(1:3,1);
 
-gt_GPS_pos1=zeros(3,length(gps_pos_001(1,:)));
-for i=1:length(gps_pos_001)
-    gt_GPS_pos1(:,i)=gt_pos1(:,(i-1)*100+1);
-end
-errorpos_gps1= gps_pos_001- gt_GPS_pos1;
-
-var_gps1 = var(errorpos_gps1')';
-
-errorpos_gpsNorm1=zeros(3,length(gps_pos_001(1,:)));
-errorpos_gpsNorm1(1,:)=abs(errorpos_gps1(1,:))./gps_HDOP_01;
-errorpos_gpsNorm1(2,:)=abs(errorpos_gps1(2,:))./gps_HDOP_01;
-errorpos_gpsNorm1(3,:)=abs(errorpos_gps1(3,:))./gps_VDOP_01;
-
-var_coeff1 = var(errorpos_gpsNorm1')';
-mean_coeff1 = mean(errorpos_gpsNorm1')';
-
-%% sensor variance estimation 2
-gps_pos_002 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/position");
-gt_pos2 = h5read("sensor_records.hdf5", "/trajectory_0002/groundtruth/position");
-gt_pos2 = h5read("sensor_records.hdf5", "/trajectory_0002/groundtruth/position");
-gps_HDOP_02 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/HDOP");
-gps_VDOP_02 = h5read("sensor_records.hdf5", "/trajectory_0002/gps/VDOP");
-
-gt_GPS_pos2=zeros(3,length(gps_pos_002(1,:)));
-for i=1:length(gps_pos_002)
-    gt_GPS_pos2(:,i)=gt_pos2(:,(i-1)*100+1);
-end
-errorpos_gps2= gps_pos_002- gt_GPS_pos2;
-
-var_gps2 = var(errorpos_gps2')';
-
-errorpos_gpsNorm2=zeros(3,length(gps_pos_002(1,:)));
-errorpos_gpsNorm2(1,:)=abs(errorpos_gps2(1,:))./gps_HDOP_02;
-errorpos_gpsNorm2(2,:)=abs(errorpos_gps2(2,:))./gps_HDOP_02;
-errorpos_gpsNorm2(3,:)=abs(errorpos_gps2(3,:))./gps_VDOP_02;
-
-var_coeff2 = var(errorpos_gpsNorm2')';
-mean_coeff2 = mean(errorpos_gpsNorm2')';
-
-%% sensor variance estimation 3
-gps_pos_003 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/position");
-gt_pos3 = h5read("sensor_records.hdf5", "/trajectory_0003/groundtruth/position");
-gps_HDOP_03 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/HDOP");
-gps_VDOP_03 = h5read("sensor_records.hdf5", "/trajectory_0003/gps/VDOP");
-
-gt_GPS_pos3=zeros(3,length(gps_pos_003(1,:)));
-for i=1:length(gps_pos_003)
-    gt_GPS_pos3(:,i)=gt_pos3(:,(i-1)*100+1);
-end
-errorpos_gps3= gps_pos_003- gt_GPS_pos3;
-
-errorpos_gpsNorm3=zeros(3,length(gps_pos_003(1,:)));
-errorpos_gpsNorm3(1,:)=abs(errorpos_gps3(1,:))./gps_HDOP_03;
-errorpos_gpsNorm3(2,:)=abs(errorpos_gps3(2,:))./gps_HDOP_03;
-errorpos_gpsNorm3(3,:)=abs(errorpos_gps3(3,:))./gps_VDOP_03;
-
-var_gps3=zeros(6,1);
-var_gps3(1,1) = var(errorpos_gps3(1,:));
-var_gps3(2,1) = var(errorpos_gps3(2,:));
-var_gps3(3,1) = var(errorpos_gps3(3,:));
-
-var_coeff3 = var(errorpos_gpsNorm3')';
-mean_coeff3 = mean(errorpos_gpsNorm3')';
 
 %% simulation with Estimator class
 
