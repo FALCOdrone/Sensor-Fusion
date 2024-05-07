@@ -75,5 +75,8 @@ class QuadEstimatorEKF  {
     //added to integrate code with FALCO.ino
     void getAttitude(quat_t *quat, attitude_t *attitude);
     void getPosVel(vec_t *pos, vec_t *vel);
+    
+    // added for computing mag readings 
+    VectorXf getMagReadings(vec_t *magB, quat_t *quat);
 };
 #endif

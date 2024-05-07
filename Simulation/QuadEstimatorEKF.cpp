@@ -383,3 +383,23 @@ void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
   vel->t = currentTime;
 
 }
+
+float QuadEstimatorEKF::getMagReadings(vec_t *mag, quat_t *quat) {
+
+  VectorXd quat_readings(4);
+  quat_readings(0) = quat->w;
+  quat_readings(1) = quat->x;
+  quat_readings(2) = quat->y;
+  quat_readings(3) = quat->z;
+  
+  Vector3f euler_angles = EPEuler321(quat_readings);
+  float pitch = euler_angles(1);
+  float roll = euler_angles(2);
+
+  float Bx = mag(0);
+  float By = mag(1);
+
+  float yawMag = atan2f(By * cos(roll) - Bx * sin(roll), Bx * cos(pitch) + By * sin(pitch) * sin(roll));
+
+  return yawMag;
+}
