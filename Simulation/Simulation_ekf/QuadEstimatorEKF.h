@@ -21,6 +21,7 @@ class QuadEstimatorEKF  {
     MatrixXf Q_at;
     MatrixXf R_GPS; // noise GPS measurement matrix
     MatrixXf R_Mag; // noise MAG measurment matrix
+    MatrixXf R_bar; // noise BAR measurment matrix
     MatrixXf H_at;  // attitude estimation measurement matrix
     MatrixXf R;  // noise measurment matrix
     MatrixXf R_at;
@@ -31,17 +32,21 @@ class QuadEstimatorEKF  {
     const int Nstate = 7;
     
     float QPosXYStd = .5f;
-    float QPosZStd = .5f;
+    float QPosZStd = .05f;
     float QVelXYStd = .5f;
-    float QVelZStd = .5f;
+    float QVelZStd = .05f;
     float QYawStd = .095f;
 
-    float GPSPosXYStd = .1f;
-    float GPSPosZStd = .3f;
-    float GPSVelXYStd = .1f;
-    float GPSVelZStd = .3f;
+    //float GPSPosXYStd = .1f;
+    float GPSPosXStd = .16f;
+    float GPSPosYStd = .3f;
+    float GPSPosZStd = 1.1f;
+    float GPSVelXYStd = pow(0.1, 4);
+    float GPSVelZStd =  pow(0.1, 3);
+    //float GPSVelXYStd = .1f;
+    //float GPSVelZStd = .3f;
 
-    float MagYawStd = .1f;
+    float MagYawStd = 1.2350f;
 
     VectorXf Euler1232EP(Vector3f p);
     VectorXf Euler3212EP(Vector3f p);
@@ -80,7 +85,13 @@ class QuadEstimatorEKF  {
     void getAttitude(quat_t *quat, attitude_t *attitude);
     void getPosVel(vec_t *pos, vec_t *vel);
     
-    // added for computing mag readings 
+    // computing mag readings 
     float getMagReadings(vec_t *magB, quat_t *quat);
+
+    // computing altitude bar readings
+    float getBarReadings(float pressure);
+
+    // computing barometer update
+    void updateFromBar(float P, float dt);
 };
 #endif

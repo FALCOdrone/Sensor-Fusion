@@ -17,7 +17,8 @@ QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs) {  
   Q *= dtIMU;
 
   R_GPS.setZero(6, 6);
-  R_GPS(0, 0) = R_GPS(1, 1) = powf(GPSPosXYStd, 2);
+  R_GPS(0, 0) = powf(GPSPosXStd, 2);
+  R_GPS(1, 1) = powf(GPSPosYStd, 2);
   R_GPS(2, 2) = powf(GPSPosZStd, 2);
   R_GPS(3, 3) = R_GPS(4, 4) = powf(GPSVelXYStd, 2);
   R_GPS(5, 5) = powf(GPSVelZStd, 2);
@@ -25,6 +26,9 @@ QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs) {  
   // magnetometer measurement model covariance
   R_Mag.setZero(Nstate, Nstate);
   R_Mag(0, 0) = powf(MagYawStd, 2);
+
+  R_bar.setZero(Nstate, Nstate);
+  R_bar(2, 2) = .2f;
 
   //attitude estimation
   xt_at.setZero(4);
@@ -403,4 +407,22 @@ float QuadEstimatorEKF::getMagReadings(vec_t *mag, quat_t *quat) {
   float yawMag = atan2f(By * cos(roll) - Bx * sin(roll), Bx * cos(pitch) + By * sin(pitch) * sin(roll));
 
   return yawMag;
+}
+
+float QuadEstimatorEKF::getBarReadings(float P) {
+  float P0 = 1013.0; //hPa (hectopascal) -> 1hPa = 1mBar
+  float altitude_from_bar = 44330 * (1 - pow(P/P0, 1/(5.255)));
+  return altitude_from_bar;
+}
+
+void QuadEstimatorEKF::updateFromBar(float P, float dt) {
+   VectorXf z(1), zFromX(1);
+   z(0) = getBarReadings(P);
+   zFromX(0) = ekfState(2);
+
+   MatrixXf hprime(1, 7);
+   hprime.setZero();
+   hprime(0, 2) = 1;
+
+   update_ekf(z, hprime, R_bar, zFromX, dt);  
 }
