@@ -260,7 +260,7 @@ void QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
     MatrixXf R_bg(3, 3);
     R_bg = quatRotMat(xt_at);
     inertial_accel = R_bg*acc;
-    inertial_accel(2) = inertial_accel(2) + 9.81; //remove gravity
+    inertial_accel(2) = inertial_accel(2); //remove gravity
 
     predictedState(0) = ekfState(0) + ekfState(3)* dt;
     predictedState(1) = ekfState(1) + ekfState(4) * dt;

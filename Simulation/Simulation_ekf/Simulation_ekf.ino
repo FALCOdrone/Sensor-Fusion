@@ -30,7 +30,7 @@ float r = 6371000; //earth radius (m)
 // Parameters for EKF
 const int Nstate = 7;
 VectorXf ini_state(Nstate);
-MatrixXf ini_stdDevs;
+VectorXf ini_stdDevs(Nstate);
 VectorXf predict_state(Nstate);
 MatrixXf R(3, 3);
     
@@ -44,6 +44,8 @@ QuadEstimatorEKF estimation;
 void setup() {
     Serial.begin(115200);
     Serial.println("Initialization starting");
+    ini_state.setZero();
+    ini_stdDevs.setOnes();
     estimation.initialize(ini_state, ini_stdDevs);
     initializeImu();
     initializeGPS();
@@ -52,8 +54,6 @@ void setup() {
     //initializeRadio();
 
     // setting initial values for estimation parameters/variables
-    ini_state.setZero();
-    ini_stdDevs.setIdentity(Nstate, Nstate);
     R << cos(PI/4), sin(PI/4), 0,
          -sin(PI/4), cos(PI/4), 0,
          0, 0, 1;
@@ -100,7 +100,7 @@ void loop() {
     estimation.updateFromMag(yawMag, mag.dt);  // TODO: calculate yaw from magnetometer data
 
     estimation.getPosVel(&pos, &speed);
-    
+    /*
     Serial.print("Quaternion:");
     Serial.print(quat.w);
     Serial.print(",");
@@ -109,9 +109,9 @@ void loop() {
     Serial.print(quat.y);
     Serial.print(",");
     Serial.println(quat.z);
-    /*
+    */
     printIMUData(&att);
     printIMUData(&pos, "m");
     printIMUData(&speed, "m/s");
-    */
+    
 }
