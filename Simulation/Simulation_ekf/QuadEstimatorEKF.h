@@ -76,22 +76,22 @@ class QuadEstimatorEKF  {
     
     void kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float dt);
     void complimentary_filter_attitude_estimation(Vector3f acc, Vector3f gyro, float dt);
-    VectorXf predict(Vector3f acc, Vector3f gyro, float dt);
+    void predict(Vector3f acc, Vector3f gyro, float dt);
 
     void updateFromMag(float magYaw, float dt);
     void updateFromGps(Vector3f pos, Vector3f vel, float dt);
+    void updateFromBar(float P, float dt);
     
     //added to integrate code with FALCO.ino
     void getAttitude(quat_t *quat, attitude_t *attitude);
     void getPosVel(vec_t *pos, vec_t *vel);
     
-    // computing mag readings 
-    float getMagReadings(vec_t *magB, quat_t *quat);
+    // computing yaw from mag readings 
+    float yawFromMag(vec_t *mag, quat_t *quat);
 
-    // computing altitude bar readings
-    float getBarReadings(float pressure);
+    // computing altitude from bar readings
+    float zFromBar(float pressure);
 
-    // computing barometer update
-    void updateFromBar(float P, float dt);
+    
 };
 #endif

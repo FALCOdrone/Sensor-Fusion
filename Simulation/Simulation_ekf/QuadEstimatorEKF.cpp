@@ -253,7 +253,7 @@ Matrix3f QuadEstimatorEKF::quatRotMat_2(VectorXf q){
   return m;
 }
 
-VectorXf QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
+void QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
 
     VectorXf predictedState = ekfState;
     Vector3f inertial_accel;
@@ -288,8 +288,6 @@ VectorXf QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
     
     ekfCov = gPrime * ekfCov * gTranspose + Q;
     ekfState = predictedState;
-
-    return ekfState;
 }
 
 void QuadEstimatorEKF::update_ekf(VectorXf z, MatrixXf H, MatrixXf R, VectorXf zFromX, float dt) {
@@ -389,7 +387,7 @@ void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
 
 }
 
-float QuadEstimatorEKF::getMagReadings(vec_t *mag, quat_t *quat) {
+float QuadEstimatorEKF::yawFromMag(vec_t *mag, quat_t *quat) {
 
   VectorXf quat_readings(4);
   quat_readings(0) = quat->w;
@@ -409,7 +407,7 @@ float QuadEstimatorEKF::getMagReadings(vec_t *mag, quat_t *quat) {
   return yawMag;
 }
 
-float QuadEstimatorEKF::getBarReadings(float P) {
+float QuadEstimatorEKF::zFromBar(float P) {
   float P0 = 1013.0; //hPa (hectopascal) -> 1hPa = 1mBar
   float altitude_from_bar = 44330 * (1 - pow(P/P0, 1/(5.255)));
   return altitude_from_bar;

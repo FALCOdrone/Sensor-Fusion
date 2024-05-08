@@ -29,6 +29,15 @@ typedef struct {
     float dt = 0.0f;
 } attitude_t;
 
+// GPS
+typedef struct {
+    float lat = 0.0f;
+    float lon = 0.0f;
+    float alt = 0.0f;
+    unsigned long t = 0.0f;
+    float dt = 0.0f;
+} gps_t;
+
 typedef struct {
     attitude_t p;
     attitude_t i;
