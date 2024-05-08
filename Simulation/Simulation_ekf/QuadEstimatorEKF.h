@@ -71,8 +71,9 @@ class QuadEstimatorEKF  {
     
     Vector3f estAttitude;  // attitude estimation vector with yaw, pitch and roll    
     VectorXf xt_at;  // attitude estimation quaternion state
-   
-    QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs);
+
+    //QuadEstimatorEKF();
+    void initialize(VectorXf ini_state, VectorXf ini_stdDevs);
     
     void kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float dt);
     void complimentary_filter_attitude_estimation(Vector3f acc, Vector3f gyro, float dt);
@@ -87,7 +88,7 @@ class QuadEstimatorEKF  {
     void getPosVel(vec_t *pos, vec_t *vel);
     
     // computing yaw from mag readings 
-    float yawFromMag(vec_t *mag, quat_t *quat);
+    float yawFromMag(vec_t mag, quat_t quat);
 
     // computing altitude from bar readings
     float zFromBar(float pressure);

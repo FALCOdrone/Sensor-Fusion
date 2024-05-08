@@ -1,6 +1,7 @@
 #include "QuadEstimatorEKF.h"
 
-QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf
+
+void QuadEstimatorEKF::initialize(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf
 
   ekfCov.setIdentity(Nstate, Nstate);
 
@@ -24,11 +25,10 @@ QuadEstimatorEKF::QuadEstimatorEKF(VectorXf ini_state, VectorXf ini_stdDevs) {  
   R_GPS(5, 5) = powf(GPSVelZStd, 2);
 
   // magnetometer measurement model covariance
-  R_Mag.setZero(Nstate, Nstate);
+  R_Mag.setZero(1,1);
   R_Mag(0, 0) = powf(MagYawStd, 2);
-
-  R_bar.setZero(Nstate, Nstate);
-  R_bar(2, 2) = .2f;
+  R_bar.setZero(1,1);
+  R_bar(0, 0) = powf(0.2f, 2);
 
   //attitude estimation
   xt_at.setZero(4);
@@ -387,20 +387,20 @@ void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
 
 }
 
-float QuadEstimatorEKF::yawFromMag(vec_t *mag, quat_t *quat) {
+float QuadEstimatorEKF::yawFromMag(vec_t mag, quat_t quat) {
 
   VectorXf quat_readings(4);
-  quat_readings(0) = quat->w;
-  quat_readings(1) = quat->x;
-  quat_readings(2) = quat->y;
-  quat_readings(3) = quat->z;
+  quat_readings(0) = quat.w;
+  quat_readings(1) = quat.x;
+  quat_readings(2) = quat.y;
+  quat_readings(3) = quat.z;
   
   VectorXf euler_angles = EPEuler321(quat_readings);
   float pitch = euler_angles(1);
   float roll = euler_angles(2);
 
-  float Bx = mag->x;
-  float By = mag->y;
+  float Bx = mag.x;
+  float By = mag.y;
 
   float yawMag = atan2f(By * cos(roll) - Bx * sin(roll), Bx * cos(pitch) + By * sin(pitch) * sin(roll));
 
@@ -415,7 +415,7 @@ float QuadEstimatorEKF::zFromBar(float P) {
 
 void QuadEstimatorEKF::updateFromBar(float P, float dt) {
    VectorXf z(1), zFromX(1);
-   z(0) = getBarReadings(P);
+   z(0) = zFromBar(P);
    zFromX(0) = ekfState(2);
 
    MatrixXf hprime(1, 7);

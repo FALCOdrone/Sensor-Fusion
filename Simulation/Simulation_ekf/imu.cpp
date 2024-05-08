@@ -170,6 +170,14 @@ void printIMUData(quat_t *quat) {
     Serial.println(quat->z);
 }
 
+void printIMUData(attitude_t *att) {
+    Serial.print(att->roll);
+    Serial.print(", ");
+    Serial.print(att->pitch);
+    Serial.print(", ");
+    Serial.println(att->yaw);
+}
+
 void logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
     Serial.print(pos->x, 4);
     Serial.print(",");

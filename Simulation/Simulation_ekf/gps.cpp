@@ -28,6 +28,10 @@ void initializeGPS(int gpsBaud) {
     */
 }
 
+bool isGPSUpdated() {
+    return gps.location.isUpdated() || gps.speed.isUpdated();
+}
+
 void getGPS(gps_t *gpsCoord, vec_t *speed) {
     if (gps.location.isUpdated()) { 
         gpsCoord->lat = gps.location.lat();

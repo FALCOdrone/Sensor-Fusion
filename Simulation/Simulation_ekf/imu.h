@@ -18,6 +18,7 @@ void getGyro(vec_t *gyro);
 
 void printIMUData(vec_t *data, const char *unit);
 void printIMUData(quat_t *quat);
+void printIMUData(attitude_t *att);
 
 void logIMU(vec_t *pos, vec_t *speed, vec_t *accel);
 

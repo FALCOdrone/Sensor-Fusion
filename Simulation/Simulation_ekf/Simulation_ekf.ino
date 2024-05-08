@@ -18,6 +18,9 @@ vec_t posGPS;
 vec_t posGPS0;    //position (from gps) of starting point
 gps_t coordGPS;
 vec_t speedGPS;
+vec_t mag;
+vec_t pos;
+vec_t speed;
 quat_t quat;
 attitude_t att;
 float yawMag;
@@ -36,15 +39,17 @@ unsigned long currentTime, prevTime;
 int GPSrate = 1;
 
 // initialization of the constructor for estimation
-QuadEstimatorEKF estimation(ini_state, ini_stdDevs);
+QuadEstimatorEKF estimation;
 
 void setup() {
     Serial.begin(115200);
+    Serial.println("Initialization starting");
+    estimation.initialize(ini_state, ini_stdDevs);
     initializeImu();
     initializeGPS();
     initializeMag();
-    initializeMotors();
-    initializeRadio();
+    //initializeMotors();
+    //initializeRadio();
 
     // setting initial values for estimation parameters/variables
     ini_state.setZero();
@@ -57,6 +62,7 @@ void setup() {
     posGPS0.x = r*coordGPS.lat; //north
     posGPS0.y = r*coordGPS.lon*cos(lat0); //east
     posGPS0.z = coordGPS.alt; //up
+    Serial.println("Initialization done");
 }
 
 void loop() {
@@ -88,9 +94,24 @@ void loop() {
     estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // prediction of the (x, y, z) position and velocity
     
     //compute the update from gps
-    estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt);
+    if (isGPSUpdated()) {
+        estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt);
+    }
     estimation.updateFromMag(yawMag, mag.dt);  // TODO: calculate yaw from magnetometer data
-    
 
     estimation.getPosVel(&pos, &speed);
+    
+    Serial.print("Quaternion:");
+    Serial.print(quat.w);
+    Serial.print(",");
+    Serial.print(quat.x);
+    Serial.print(",");
+    Serial.print(quat.y);
+    Serial.print(",");
+    Serial.println(quat.z);
+    /*
+    printIMUData(&att);
+    printIMUData(&pos, "m");
+    printIMUData(&speed, "m/s");
+    */
 }
