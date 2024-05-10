@@ -55,7 +55,6 @@
 #define BARO_ADDR 0x76
 
 // Magnetometer Address
-// #define HAS_MAG
-// #define MAG_ADDR  // TODO
+#define HAS_MAG
 
 #endif

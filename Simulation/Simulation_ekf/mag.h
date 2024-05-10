@@ -7,6 +7,7 @@
 #include <Wire.h>
 
 #include "limits.h"
+
 #include "types.h"
 
 void initializeMag();

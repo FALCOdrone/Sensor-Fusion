@@ -1,7 +1,7 @@
 {
     "sketch": "Simulation\\Simulation_ekf\\Simulation_ekf.ino",
-    "configuration": "usb=serial,speed=600,opt=o2std,keys=en-us",
     "board": "teensy:avr:teensy41",
     "output": ".\\build",
-    "port": "COM8"
+    "port": "COM8",
+    "configuration": "usb=serial,speed=600,opt=o2std,keys=en-us"
 }

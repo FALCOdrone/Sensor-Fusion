@@ -38,6 +38,7 @@ typedef struct {
     float dt = 0.0f;
 } gps_t;
 
+// PID
 typedef struct {
     attitude_t p;
     attitude_t i;
@@ -48,5 +49,15 @@ typedef struct {
     attitude_t out;
     attitude_t outPrev;
 } PID_t;
+
+// Barometer
+typedef struct {
+    float pressure = 0.0f;
+    float temperature = 0.0f;
+    float humidity = 0.0f;
+    float altitude = 0.0f;
+    unsigned long t = 0.0f;
+    float dt = 0.0f;
+} bar_t;
 
 #endif
