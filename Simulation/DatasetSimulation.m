@@ -79,9 +79,12 @@ for ii = 1:length(gyro_000)
   ekf.predict(acc,gyro,fading,residual);
 
   %simulated magnetometer update (supposing mag frequency equal that of IMU)
-  %[~,~,magReadings] = imu([0,0,0],[0,0,0],QuatRotMat(gt_attitude(:,ii)));
-  %yaw_reading(ii) = atan2(magReadings(2), magReadings(1));
-  %ekf.updateFromMag(yaw_reading(ii), residual);
+  [~,~,magReadings] = imu([0,0,0],[0,0,0],QuatRotMat(gt_attitude(:,ii)));
+  euler = ekf.estAttitude;
+  pitch = euler(2);
+  roll = euler(3);
+  yaw_reading(ii) = atan2(magReadings(2)*cos(roll) - magReadings(1)*sin(roll), magReadings(1)*cos(pitch) + magReadings(2)*sin(pitch)*sin(pitch));
+  ekf.updateFromMag(yaw_reading(ii), residual);
 
   % gps update
   if(mod(ii, 100) == 1 && jj <= length(gps_pos_000)) 
