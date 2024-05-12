@@ -10,6 +10,9 @@
 #include "radio.h"
 #include "utils.h"
 
+#define DEBUG 1
+#define DEBUG_GPS 0
+
 // variables
 vec_t accelWithOffset;
 VectorXf accelWithOffset2(3);
@@ -77,10 +80,38 @@ void loop() {
     // getting values from imu
     getAcceleration(&accelWithOffset);
     getGyro(&gyro);
+<<<<<<< Updated upstream
     getGPS(&coordGPS, &speedGPS);
     getMag(&mag);
     getBarometer(&bar);
 
+=======
+    if(DEBUG){
+      Serial.print("Acc");
+      printIMUData(&accelWithOffset, "m/s^2");
+      Serial.print("Gyro");
+      printIMUData(&gyro, "rad/s");
+    }
+
+    if(isGPSUpdated()){
+      getGPS(&coordGPS, &speedGPS); 
+      posGPS.x = r*coordGPS.lat - posGPS0.x;  //north
+      posGPS.y = r*coordGPS.lon*cos(lat0) - posGPS0.y;  //east
+      posGPS.z = -coordGPS.alt + posGPS0.z;  //down
+      posGPS.dt = coordGPS.dt;
+      if(DEBUG_GPS || DEBUG){
+        Serial.print("GPS pos");
+        printIMUData(&posGPS, "m");
+        Serial.print("GPS speed");
+        printIMUData(&speedGPS, "m/s");
+      }
+    }
+    getMag(&mag);
+    if(DEBUG){
+      Serial.print("Mag");
+      printIMUData(&mag, "µT");
+    }
+>>>>>>> Stashed changes
     // removing the angular offset
     accelWithOffset2(0) = accelWithOffset.x;
     accelWithOffset2(1) = accelWithOffset.y;
@@ -88,6 +119,7 @@ void loop() {
 
     fixed_accel = R * accelWithOffset2;  // body frame accelleration without offset
     yawMag = estimation.yawFromMag(mag, quat);
+<<<<<<< Updated upstream
 
     // projection of gps coordinates to x, y, z
     posGPS.x = r * coordGPS.lat - posGPS0.x;              // north
@@ -95,6 +127,10 @@ void loop() {
     posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
     posGPS.dt = coordGPS.dt;
 
+=======
+    
+    
+>>>>>>> Stashed changes
     // EKF estimation for attitude, speed and position
     estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
     estimation.getAttitude(&quat, &att);
@@ -118,10 +154,44 @@ void loop() {
     Serial.print(",");
     Serial.println(quat.z);
     */
+<<<<<<< Updated upstream
     printIMUData(&att);
     printIMUData(&pos, "m");
     printIMUData(&speed, "m/s");
 
     // Feed GPS
     feedGPS();
+=======
+    if(DEBUG){
+      Serial.print("EKF Quat");
+      printIMUData(&quat);
+      //Serial.print("EKF Att");
+      //printIMUData(&att);
+      /*Serial.print("EKF Pos");
+      printIMUData(&pos, "m");
+      Serial.print("EKF Speed");
+      printIMUData(&speed, "m/s");*/
+    }
+    feedGPS();
+    loopRate(2000);
+}
+
+void loopRate(int freq) {
+    // DESCRIPTION: Regulate main loop rate to specified frequency in Hz
+    /*
+     * It's good to operate at a constant loop rate for filters to remain stable and whatnot. Interrupt routines running in the
+     * background cause the loop rate to fluctuate. This function basically just waits at the end of every loop iteration until
+     * the correct time has passed since the start of the current loop for the desired loop rate in Hz. 2kHz is a good rate to
+     * be at because the loop nominally will run between 2.8kHz - 4.2kHz. This lets us have a little room to add extra computations
+     * and remain above 2kHz, without needing to retune all of our filtering parameters.
+     */
+    float invFreq = 1.0 / freq * 1000000.0;
+    unsigned long checker = micros();
+
+    // Sit in loop until appropriate time has passed
+    while (invFreq > (checker - currentTime)) {
+        feedGPS();
+        checker = micros();
+    }
+>>>>>>> Stashed changes
 }
