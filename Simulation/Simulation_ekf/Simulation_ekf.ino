@@ -80,21 +80,15 @@ void loop() {
     // getting values from imu
     getAcceleration(&accelWithOffset);
     getGyro(&gyro);
-<<<<<<< Updated upstream
-    getGPS(&coordGPS, &speedGPS);
-    getMag(&mag);
-    getBarometer(&bar);
-
-=======
     if(DEBUG){
       Serial.print("Acc");
       printIMUData(&accelWithOffset, "m/s^2");
       Serial.print("Gyro");
       printIMUData(&gyro, "rad/s");
     }
-
+    
+    getGPS(&coordGPS, &speedGPS); 
     if(isGPSUpdated()){
-      getGPS(&coordGPS, &speedGPS); 
       posGPS.x = r*coordGPS.lat - posGPS0.x;  //north
       posGPS.y = r*coordGPS.lon*cos(lat0) - posGPS0.y;  //east
       posGPS.z = -coordGPS.alt + posGPS0.z;  //down
@@ -106,12 +100,19 @@ void loop() {
         printIMUData(&speedGPS, "m/s");
       }
     }
+
     getMag(&mag);
     if(DEBUG){
       Serial.print("Mag");
       printIMUData(&mag, "µT");
     }
->>>>>>> Stashed changes
+    
+    getBarometer(&bar);
+    if(DEBUG){
+      Serial.print("Bar");
+      //printIMUData(&bar, "m");
+      Serial.print("MISSING FUNCTION TO PRINT BAROMETER DATA");
+    }
     // removing the angular offset
     accelWithOffset2(0) = accelWithOffset.x;
     accelWithOffset2(1) = accelWithOffset.y;
@@ -119,18 +120,8 @@ void loop() {
 
     fixed_accel = R * accelWithOffset2;  // body frame accelleration without offset
     yawMag = estimation.yawFromMag(mag, quat);
-<<<<<<< Updated upstream
-
-    // projection of gps coordinates to x, y, z
-    posGPS.x = r * coordGPS.lat - posGPS0.x;              // north
-    posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y;  // east
-    posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
-    posGPS.dt = coordGPS.dt;
-
-=======
     
     
->>>>>>> Stashed changes
     // EKF estimation for attitude, speed and position
     estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
     estimation.getAttitude(&quat, &att);
@@ -154,14 +145,6 @@ void loop() {
     Serial.print(",");
     Serial.println(quat.z);
     */
-<<<<<<< Updated upstream
-    printIMUData(&att);
-    printIMUData(&pos, "m");
-    printIMUData(&speed, "m/s");
-
-    // Feed GPS
-    feedGPS();
-=======
     if(DEBUG){
       Serial.print("EKF Quat");
       printIMUData(&quat);
@@ -193,5 +176,4 @@ void loopRate(int freq) {
         feedGPS();
         checker = micros();
     }
->>>>>>> Stashed changes
 }
