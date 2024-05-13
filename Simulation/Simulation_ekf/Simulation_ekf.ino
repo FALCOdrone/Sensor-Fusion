@@ -50,6 +50,7 @@ void setup() {
     initializeImu();
     initializeGPS(115200, &coordGPS);
     initializeMag();
+    initializeBarometer();
     // initializeMotors();
     // initializeRadio();
 

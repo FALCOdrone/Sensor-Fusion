@@ -1,9 +1,9 @@
 #include "imu.h"
 
 #ifdef UDOO
-MPU6500 IMU;  // UDOO KEY
+MPU6500 mpu;  // UDOO KEY
 #else
-MPU6050 IMU;
+MPU6050 mpu;
 #endif
 
 // Filter parameters - Defaults tuned for 2kHz loop rate; Do not touch unless you know what you are doing:
@@ -16,133 +16,180 @@ float B_mag = 1.0;  // Magnetometer LP filter parameter
 #endif
 */
 
-calData calib = {0};  // Calibration data
-float deadZone[3] = {0.0, 0.0, 0.0};
-//Madgwick filter;
+// MPU control/status vars
+bool dmpReady = false;   // set true if DMP init was successful
+uint8_t mpuIntStatus;    // holds actual interrupt status byte from MPU
+uint8_t devStatus;       // return status after each device operation (0 = success, !0 = error)
+uint16_t packetSize;     // expected DMP packet size (default is 42 bytes)
+uint16_t fifoCount;      // count of all bytes currently in FIFO
+uint8_t fifoBuffer[64];  // FIFO storage buffer
 
 // WARNING: run this strictly when the drone is on a flat surface and not moving
-void initializeImu(int calibrate) {
-#ifdef UDOO
-    Wire.begin(18, 21);  // UDOO KEY
-#else
+void initializeImu() {
+// join I2C bus (I2Cdev library doesn't do this automatically)
+#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     Wire.begin();
+    Wire.setClock(400000);  // 400kHz I2C clock. Comment this line if having compilation difficulties
+#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+    Fastwire::setup(400, true);
 #endif
 
-    Wire.setClock(400000);  // 400khz clock
+    Serial.println(F("Initializing I2C devices..."));
+    mpu.initialize();
 
-    int err = IMU.init(calib, IMU_ADDR);
-    if (err != 0) {
-        Serial.print("Error initializing IMU: ");
-        Serial.println(err);
-        while (true) {
-            ;
-        }
+    // verify connection
+    Serial.println(F("Testing device connections..."));
+    Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+
+    Serial.println(F("Initializing DMP..."));
+    devStatus = mpu.dmpInitialize();
+
+    // TODO: get offset from IMU_Zero example file
+    mpu.setXGyroOffset(220);
+    mpu.setYGyroOffset(76);
+    mpu.setZGyroOffset(-85);
+    mpu.setXAccelOffset(1150);
+    mpu.setYAccelOffset(-50);
+    mpu.setZAccelOffset(1060);
+
+    // make sure it worked (returns 0 if so)
+    if (devStatus == 0) {
+        // Calibration Time: generate offsets and calibrate our MPU6050
+        mpu.CalibrateAccel(6);
+        mpu.CalibrateGyro(6);
+        Serial.println();
+        mpu.PrintActiveOffsets();
+        // turn on the DMP, now that it's ready
+        Serial.println(F("Enabling DMP..."));
+        mpu.setDMPEnabled(true);
+
+        // set our DMP Ready flag so the main loop() function knows it's okay to use it
+        dmpReady = true;
+
+        // get expected DMP packet size for later comparison
+        packetSize = mpu.dmpGetFIFOPacketSize();
+    } else {
+        // ERROR!
+        // 1 = initial memory load failed
+        // 2 = DMP configuration updates failed
+        // (if it's going to break, usually the code will be 1)
+        Serial.print(F("DMP Initialization failed (code "));
+        Serial.print(devStatus);
+        Serial.println(F(")"));
     }
-
-    IMU.setGyroRange(GYRO_SCALE);
-    IMU.setAccelRange(ACCEL_SCALE);
-
-    if (calibrate) {
-        Serial.println("Keep IMU level.");
-        delay(5000);
-        IMU.calibrateAccelGyro(&calib);
-        Serial.println("Calibration done!");
-        Serial.println("Accel biases X/Y/Z: ");
-        Serial.print(calib.accelBias[0]);
-        Serial.print(", ");
-        Serial.print(calib.accelBias[1]);
-        Serial.print(", ");
-        Serial.println(calib.accelBias[2]);
-        Serial.println("Gyro biases X/Y/Z: ");
-        Serial.print(calib.gyroBias[0]);
-        Serial.print(", ");
-        Serial.print(calib.gyroBias[1]);
-        Serial.print(", ");
-        Serial.println(calib.gyroBias[2]);
-        delay(2000);
-        IMU.init(calib, IMU_ADDR);
-
-        // Get the dead zone reading the worst values while still for 1.5 seconds
-        //AccelData tmp;
-        //float t = millis();
-
-        /*
-        while (millis() - t <= 2000) {
-            IMU.update();
-            IMU.getAccel(&tmp);
-            deadZone[0] = max(deadZone[0], abs(tmp.accelX) * 5);
-            deadZone[1] = max(deadZone[1], abs(tmp.accelY) * 5);
-            deadZone[2] = max(deadZone[2], abs((float)(tmp.accelZ - 1.0)) * 5);
-            delay(100);
-        }
-
-        Serial.print("Dead zone: ");
-        Serial.print(deadZone[0], 6);
-        Serial.print(", ");
-        Serial.print(deadZone[1], 6);
-        Serial.print(", ");
-        Serial.println(deadZone[2], 6);
-        */
-    }
-    //filter.begin(B_madgwick);
 }
 
-/*
-void getAttitude(quat_t *quat, attitude_t *att) {
-    AccelData IMUAccel;
-    GyroData IMUGyro;
-
-    IMU.update();
-    unsigned long currentTime = micros();
-    IMU.getAccel(&IMUAccel);
-    IMU.getGyro(&IMUGyro);
-    filter.updateIMU(IMUGyro.gyroX, IMUGyro.gyroY, IMUGyro.gyroZ, IMUAccel.accelX, IMUAccel.accelY, IMUAccel.accelZ);
-
-    // Save quaternions from madgwick filter
-    quat->x = filter.getQuatX();
-    quat->y = filter.getQuatY();
-    quat->z = filter.getQuatZ();
-    quat->w = filter.getQuatW();
-    quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000000.0f;
-    quat->t = currentTime;
-
-    // Save euler angles from quaternion
-    att->roll = atan2(2.0f * (quat->w * quat->x + quat->y * quat->z), 1.0f - 2.0f * (quat->x * quat->x + quat->y * quat->y)) * 57.29577951;
-    att->pitch = asin(constrain(2.0f * (quat->w * quat->y - quat->z * quat->x), -0.999999, 0.999999)) * 57.29577951;
-    att->yaw = atan2(2.0f * (quat->w * quat->z + quat->x * quat->y), 1.0f - 2.0f * (quat->y * quat->y + quat->z * quat->z)) * 57.29577951;
-    att->t = currentTime;
+void getQuaternion(quat_t *quat) {
+    Quaternion q;  // [w, x, y, z]         quaternion container
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
+        quat->w = q.w;
+        quat->x = q.x;
+        quat->y = q.y;
+        quat->z = q.z;
+        quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000000.0f;
+        quat->t = currentTime;
+    }
 }
-*/
 
+// Euler angles in radians
+void getAttitude(attitude_t *att) {
+    Quaternion q;         // [w, x, y, z]         quaternion container
+    VectorFloat gravity;  // [x, y, z]            gravity vector
+    float ypr[3];         // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
+        mpu.dmpGetGravity(&gravity, &q);
+        mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+        att->yaw = ypr[0];
+        att->pitch = ypr[1];
+        att->roll = ypr[2];
+        att->dt = (currentTime >= att->t) ? (currentTime - att->t) / 1000000.0f : (currentTime + (ULONG_MAX - att->t + 1)) / 1000000.0f;
+        att->t = currentTime;
+    }
+}
+
+void getRawAccel(vec_t *accel) {
+    VectorInt16 aa;  // [x, y, z]            accel sensor measurements
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        mpu.dmpGetAccel(&aa, fifoBuffer);
+        accel->x = aa.x;
+        accel->y = aa.y;
+        accel->z = aa.z;
+        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
+        accel->t = currentTime;
+    }
+}
+
+void getRawGyro(vec_t *gyro) {
+    VectorInt16 gy;  // [x, y, z]            gyro sensor measurements
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        mpu.dmpGetGyro(&gy, fifoBuffer);
+        gyro->x = gy.x;
+        gyro->y = gy.y;
+        gyro->z = gy.z;
+        gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000000.0f;
+        gyro->t = currentTime;
+    }
+}
+
+// real acceleration, adjusted to remove gravity
+void getRealAccel(vec_t *accel) {
+    Quaternion q;         // [w, x, y, z]         quaternion container
+    VectorInt16 aa;       // [x, y, z]            accel sensor measurements
+    VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
+    VectorInt16 aaWorld;  // [x, y, z]            world-frame accel sensor measurements
+    VectorFloat gravity;  // [x, y, z]            gravity vector
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        // display real acceleration, adjusted to remove gravity
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
+        mpu.dmpGetAccel(&aa, fifoBuffer);
+        mpu.dmpGetGravity(&gravity, &q);
+        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+        accel->x = aaReal.x;
+        accel->y = aaReal.y;
+        accel->z = aaReal.z;
+        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
+        accel->t = currentTime;
+    }
+}
+
+// world-frame acceleration, adjusted to remove gravity
+// and rotated based on known orientation from quaternion
+void getWorldAccel(vec_t *accel) {
+    Quaternion q;         // [w, x, y, z]         quaternion container
+    VectorInt16 aa;       // [x, y, z]            accel sensor measurements
+    VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
+    VectorInt16 aaWorld;  // [x, y, z]            world-frame accel sensor measurements
+    VectorFloat gravity;  // [x, y, z]            gravity vector
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+        unsigned long currentTime = micros();
+        // display real acceleration, adjusted to remove gravity
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
+        mpu.dmpGetAccel(&aa, fifoBuffer);
+        mpu.dmpGetGravity(&gravity, &q);
+        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+        mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+        accel->x = aaWorld.x;
+        accel->y = aaWorld.y;
+        accel->z = aaWorld.z;
+        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
+        accel->t = currentTime;
+    }
+}
+
+// Compatibility with old code
 void getAcceleration(vec_t *accel) {
-    IMU.update();
-    unsigned long currentTime = micros();
-
-    AccelData tmp;
-
-    IMU.getAccel(&tmp);
-
-    // Save data considering the dead zone
-    accel->x = tmp.accelX;
-    accel->y = tmp.accelY;
-    accel->z = tmp.accelZ;
-    accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
-    accel->t = currentTime;
+    getRealAccel(accel);
 }
 
 void getGyro(vec_t *gyro) {
-    IMU.update();
-    unsigned long currentTime = micros();
-
-    GyroData tmp;
-
-    IMU.getGyro(&tmp);
-
-    gyro->x = tmp.gyroX;
-    gyro->y = tmp.gyroY;
-    gyro->z = tmp.gyroZ;
-    gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000000.0f;
-    gyro->t = currentTime;
+    getRawGyro(gyro);
 }
 
 // Debug functions
