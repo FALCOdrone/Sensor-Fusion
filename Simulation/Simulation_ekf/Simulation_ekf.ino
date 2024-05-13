@@ -132,7 +132,7 @@ void loop() {
     if (isGPSUpdated()) {
         estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt);
     }
-    estimation.updateFromMag(yawMag, mag.dt);  // TODO: calculate yaw from magnetometer data
+    estimation.updateFromMag(yawMag, mag.dt);  
     estimation.updateFromBar(bar.pressure, bar.dt);
 
     estimation.getPosVel(&pos, &speed);

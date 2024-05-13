@@ -325,8 +325,10 @@ void QuadEstimatorEKF::updateFromMag(float magYaw, float dt) {
   }else{
         z(0) -= 2.f * PI;
   }
-    update_ekf(z, hPrime, R_Mag, zFromX, dt);
-  }
+  update_ekf(z, hPrime, R_Mag, zFromX, dt);
+  estAttitude(0) = ekfState(6);
+  xt_at = Euler3212EP(estAttitude);
+}
 
 void QuadEstimatorEKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
 
