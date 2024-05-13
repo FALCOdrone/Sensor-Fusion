@@ -176,7 +176,8 @@ classdef Estimator < handle
             hPrime(1,7) = 1;
             zFromX = obj.ekfState(7);
             update(obj, z, hPrime, obj.R_Mag, zFromX, residual);
-
+            obj.estAttitude(1) = obj.ekfState(7);
+            obj.xt_at = eul2quat(obj.estAttitude, 'ZYX')';
         end    
 
         function update(obj, z, H, R, zFromX, residual)
