@@ -35,6 +35,9 @@ void initializeBarometer() {
     case BME280::ChipModel_BME280:
         Serial.println("Found BME280 sensor! Success.");
         break;
+    case BME280::ChipModel_BMP280:
+        Serial.println("Found BMP280 sensor! No Humidity available.");
+        break;
     default:
         Serial.println("Found UNKNOWN sensor! Error!");
     }
