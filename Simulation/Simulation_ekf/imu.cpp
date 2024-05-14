@@ -45,12 +45,12 @@ void initializeImu() {
     devStatus = mpu.dmpInitialize();
 
     // TODO: get offset from IMU_Zero example file
-    mpu.setXGyroOffset(220);
-    mpu.setYGyroOffset(76);
-    mpu.setZGyroOffset(-85);
-    mpu.setXAccelOffset(1150);
-    mpu.setYAccelOffset(-50);
-    mpu.setZAccelOffset(1060);
+    mpu.setXGyroOffset(-19);
+    mpu.setYGyroOffset(-10);
+    mpu.setZGyroOffset(-65);
+    mpu.setXAccelOffset(-851);
+    mpu.setYAccelOffset(-5142);
+    mpu.setZAccelOffset(1359);
 
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
@@ -116,20 +116,21 @@ void getRawAccel(vec_t *accel) {
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
         unsigned long currentTime = micros();
         mpu.dmpGetAccel(&aa, fifoBuffer);
-        accel->x = aa.x;
-        accel->y = aa.y;
-        accel->z = aa.z;
+        accel->x = aa.x/16384.0f*9.81f;
+        accel->y = aa.y/16384.0f*9.81f;
+        accel->z = aa.z/16384.0f*9.81f;
         accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
         accel->t = currentTime;
     }
 }
 
+// TODO: add scaling factor
 void getRawGyro(vec_t *gyro) {
     VectorInt16 gy;  // [x, y, z]            gyro sensor measurements
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
         unsigned long currentTime = micros();
         mpu.dmpGetGyro(&gy, fifoBuffer);
-        gyro->x = gy.x;
+        gyro->x = gy.x/;
         gyro->y = gy.y;
         gyro->z = gy.z;
         gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000000.0f;
@@ -151,9 +152,9 @@ void getRealAccel(vec_t *accel) {
         mpu.dmpGetAccel(&aa, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-        accel->x = aaReal.x;
-        accel->y = aaReal.y;
-        accel->z = aaReal.z;
+        accel->x = aaReal.x/16384.0f*9.81f;
+        accel->y = aaReal.y/16384.0f*9.81f;
+        accel->z = aaReal.z/16384.0f*9.81f;
         accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
         accel->t = currentTime;
     }
@@ -175,9 +176,9 @@ void getWorldAccel(vec_t *accel) {
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
         mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-        accel->x = aaWorld.x;
-        accel->y = aaWorld.y;
-        accel->z = aaWorld.z;
+        accel->x = aaWorld.x/16384.0f*9.81f;
+        accel->y = aaWorld.y/16384.0f*9.81f;
+        accel->z = aaWorld.z/16384.0f*9.81f;
         accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
         accel->t = currentTime;
     }
