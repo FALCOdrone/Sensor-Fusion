@@ -10,8 +10,16 @@
 #include "radio.h"
 #include "utils.h"
 
-#define DEBUG 1
+#define DEBUG_ALL 0
 #define DEBUG_GPS 0
+#define DEBUG_ACC 0
+#define DEBUG_GYRO 0
+#define DEBUG_MAG 0
+#define DEBUG_BAR 1
+#define DEBUG_POS 1
+#define DEBUG_VEL 0
+#define DEBUG_QUAT 0
+#define DEBUG_YPR 1
 
 // variables
 vec_t accelWithOffset;
@@ -51,7 +59,7 @@ void setup() {
     Serial.println("Initialization starting");
 
     initializeImu();
-    initializeGPS(115200, &coordGPS);
+    initializeGPS(115200, NULL);
     initializeMag();
     initializeBarometer();
     // initializeMotors();
@@ -81,20 +89,22 @@ void loop() {
     // getting values from imu
     getAcceleration(&accelWithOffset);
     getGyro(&gyro);
-    if(DEBUG){
+    if(DEBUG_ACC || DEBUG_ALL){
       Serial.print("Acc");
-      printIMUData(&accelWithOffset, "m/s^2");
+      printIMUData(&accelWithOffset, "m/s^2"); 
+    }
+    if(DEBUG_GYRO || DEBUG_ALL){
       Serial.print("Gyro");
       printIMUData(&gyro, "rad/s");
     }
-    
+
     getGPS(&coordGPS, &speedGPS); 
     if(isGPSUpdated()){
       posGPS.x = r*coordGPS.lat - posGPS0.x;  //north
       posGPS.y = r*coordGPS.lon*cos(lat0) - posGPS0.y;  //east
       posGPS.z = -coordGPS.alt + posGPS0.z;  //down
       posGPS.dt = coordGPS.dt;
-      if(DEBUG_GPS || DEBUG){
+      if(DEBUG_GPS || DEBUG_ALL){
         Serial.print("GPS pos");
         printIMUData(&posGPS, "m");
         Serial.print("GPS speed");
@@ -103,16 +113,16 @@ void loop() {
     }
 
     getMag(&mag);
-    if(DEBUG){
+    if(DEBUG_MAG || DEBUG_ALL){
       Serial.print("Mag");
       printIMUData(&mag, "µT");
     }
     
     getBarometer(&bar);
-    if(DEBUG){
-      Serial.print("Bar");
+    if(DEBUG_BAR || DEBUG_ALL){
+      //Serial.print("Bar: ");
       //printIMUData(&bar, "m");
-      Serial.print("MISSING FUNCTION TO PRINT BAROMETER DATA");
+      printIMUData(&bar, "m");
     }
     // removing the angular offset
     accelWithOffset2(0) = accelWithOffset.x;
@@ -124,8 +134,11 @@ void loop() {
     
     
     // EKF estimation for attitude, speed and position
-    estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
-    estimation.getAttitude(&quat, &att);
+    //estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
+    getQuaternion(&quat);
+    getAttitude(&att);
+    estimation.xt_at << quat.w, quat.x, quat.y, quat.z;
+    estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
     estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // prediction of the (x, y, z) position and velocity
 
     // compute the update from gps
@@ -133,7 +146,7 @@ void loop() {
         estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt);
     }
     estimation.updateFromMag(yawMag, mag.dt);  
-    estimation.updateFromBar(bar.pressure, bar.dt);
+    //estimation.updateFromBar(bar.altitude, bar.dt);
 
     estimation.getPosVel(&pos, &speed);
     /*
@@ -146,15 +159,21 @@ void loop() {
     Serial.print(",");
     Serial.println(quat.z);
     */
-    if(DEBUG){
+    if(DEBUG_QUAT || DEBUG_ALL){
       Serial.print("EKF Quat");
       printIMUData(&quat);
-      //Serial.print("EKF Att");
-      //printIMUData(&att);
-      /*Serial.print("EKF Pos");
+    }
+    if(DEBUG_YPR || DEBUG_ALL){
+      //Serial.print("EKF YPR: ");
+      printIMUData(&att);
+    }
+    if(DEBUG_POS || DEBUG_ALL){
+      //Serial.print("EKF Pos: ");
       printIMUData(&pos, "m");
+    }
+    if(DEBUG_VEL || DEBUG_ALL){
       Serial.print("EKF Speed");
-      printIMUData(&speed, "m/s");*/
+      printIMUData(&speed, "m/s");
     }
     feedGPS();
     loopRate(2000);

@@ -30,6 +30,7 @@ void initializeGPS(int gpsBaud, gps_t *coord) {
     if (coord != NULL) {
         while (gps.location.isUpdated() == 0) {
             feedGPS();
+            Serial.println(F("Feeding GPS, waiting for starting poisition"));
         }
         // Store starting position
         getGPS(coord, NULL);

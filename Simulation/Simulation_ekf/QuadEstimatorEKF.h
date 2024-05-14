@@ -51,7 +51,6 @@ class QuadEstimatorEKF  {
     VectorXf Euler1232EP(Vector3f p);
     VectorXf Euler3212EP(Vector3f p);
     Vector3f EPEuler123(VectorXf q);
-    Vector3f EPEuler321(VectorXf q);
     Vector3f EulerVelocities_to_BodyRates(Vector3f omega);
     Vector3f BodyRates_to_EulerVelocities(Vector3f pqr);
     MatrixXf Rot_mat();
@@ -93,6 +92,6 @@ class QuadEstimatorEKF  {
     // computing altitude from bar readings
     float zFromBar(float pressure);
 
-    
+    Vector3f EPEuler321(VectorXf q);    
 };
 #endif

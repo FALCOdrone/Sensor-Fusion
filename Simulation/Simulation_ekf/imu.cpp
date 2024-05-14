@@ -68,6 +68,7 @@ void initializeImu() {
 
         // get expected DMP packet size for later comparison
         packetSize = mpu.dmpGetFIFOPacketSize();
+        Serial.println(F("Finished IMU Initialization"));
     } else {
         // ERROR!
         // 1 = initial memory load failed
@@ -130,9 +131,9 @@ void getRawGyro(vec_t *gyro) {
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
         unsigned long currentTime = micros();
         mpu.dmpGetGyro(&gy, fifoBuffer);
-        gyro->x = gy.x/;
-        gyro->y = gy.y;
-        gyro->z = gy.z;
+        gyro->x = gy.x/131.0f*PI/180.0f;
+        gyro->y = gy.y/131.0f*PI/180.0f;
+        gyro->z = gy.z/131.0f*PI/180.0f;
         gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000000.0f;
         gyro->t = currentTime;
     }
@@ -216,6 +217,15 @@ void printIMUData(quat_t *quat) {
     Serial.print(quat->y);
     Serial.print(", ");
     Serial.println(quat->z);
+}
+
+void printIMUData(bar_t *bar, const char *unit) {
+    Serial.print(bar->altitude);
+    Serial.print(unit);
+    Serial.print(", ");
+    Serial.print("Time:");
+    Serial.print(bar->dt);
+    Serial.println("s");
 }
 
 void printIMUData(attitude_t *att) {
