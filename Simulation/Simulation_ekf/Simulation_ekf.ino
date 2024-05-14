@@ -10,7 +10,7 @@
 #include "radio.h"
 #include "utils.h"
 
-#define DEBUG_ALL 0
+#define DEBUG_ALL 1
 #define DEBUG_GPS 0
 #define DEBUG_ACC 0
 #define DEBUG_GYRO 0
@@ -90,12 +90,12 @@ void loop() {
     getAcceleration(&accelWithOffset);
     getGyro(&gyro);
     if(DEBUG_ACC || DEBUG_ALL){
-      Serial.print("Acc");
-      printIMUData(&accelWithOffset, "m/s^2"); 
+      Serial.print("Acc:");
+      printIMUData(&accelWithOffset); 
     }
     if(DEBUG_GYRO || DEBUG_ALL){
-      Serial.print("Gyro");
-      printIMUData(&gyro, "rad/s");
+      Serial.print("Gyro:");
+      printIMUData(&gyro);
     }
 
     getGPS(&coordGPS, &speedGPS); 
@@ -105,24 +105,24 @@ void loop() {
       posGPS.z = -coordGPS.alt + posGPS0.z;  //down
       posGPS.dt = coordGPS.dt;
       if(DEBUG_GPS || DEBUG_ALL){
-        Serial.print("GPS pos");
-        printIMUData(&posGPS, "m");
-        Serial.print("GPS speed");
-        printIMUData(&speedGPS, "m/s");
+        Serial.print("GPS_Pos:");
+        printIMUData(&posGPS);
+        Serial.print("GPS_Speed:");
+        printIMUData(&speedGPS);
       }
     }
 
     getMag(&mag);
     if(DEBUG_MAG || DEBUG_ALL){
-      Serial.print("Mag");
-      printIMUData(&mag, "µT");
+      Serial.print("Mag:");
+      printIMUData(&mag);
     }
     
     getBarometer(&bar);
     if(DEBUG_BAR || DEBUG_ALL){
-      //Serial.print("Bar: ");
+      Serial.print("Bar:");
       //printIMUData(&bar, "m");
-      printIMUData(&bar, "m");
+      printIMUData(&bar);
     }
     // removing the angular offset
     accelWithOffset2(0) = accelWithOffset.x;
@@ -160,20 +160,20 @@ void loop() {
     Serial.println(quat.z);
     */
     if(DEBUG_QUAT || DEBUG_ALL){
-      Serial.print("EKF Quat");
+      Serial.print("EKF_Quat:");
       printIMUData(&quat);
     }
     if(DEBUG_YPR || DEBUG_ALL){
-      //Serial.print("EKF YPR: ");
+      Serial.print("EKF_YPR:");
       printIMUData(&att);
     }
     if(DEBUG_POS || DEBUG_ALL){
-      //Serial.print("EKF Pos: ");
-      printIMUData(&pos, "m");
+      Serial.print("EKF_Pos:");
+      printIMUData(&pos);
     }
     if(DEBUG_VEL || DEBUG_ALL){
-      Serial.print("EKF Speed");
-      printIMUData(&speed, "m/s");
+      Serial.print("EKF_Speed:");
+      printIMUData(&speed);
     }
     feedGPS();
     loopRate(2000);

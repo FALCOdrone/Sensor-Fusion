@@ -209,6 +209,16 @@ void printIMUData(vec_t *data, const char *unit) {
     Serial.println("s");
 }
 
+void printIMUData(vec_t *data) {
+    Serial.print(data->x, 6);
+    Serial.print(", ");
+    Serial.print(data->y, 6);
+    Serial.print(", ");
+    Serial.print(data->z, 6);
+    Serial.print(",");
+    Serial.println(data->dt, 6);
+}
+
 void printIMUData(quat_t *quat) {
     Serial.print(quat->w);
     Serial.print(", ");
@@ -219,13 +229,10 @@ void printIMUData(quat_t *quat) {
     Serial.println(quat->z);
 }
 
-void printIMUData(bar_t *bar, const char *unit) {
-    Serial.print(bar->altitude);
-    Serial.print(unit);
+void printIMUData(bar_t *bar) {
+    Serial.print(bar->altitude, 6);
     Serial.print(", ");
-    Serial.print("Time:");
-    Serial.print(bar->dt);
-    Serial.println("s");
+    Serial.println(bar->dt, 6);
 }
 
 void printIMUData(attitude_t *att) {
