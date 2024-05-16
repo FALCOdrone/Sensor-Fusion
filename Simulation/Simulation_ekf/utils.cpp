@@ -36,6 +36,78 @@ void lpFilter(quat_t *current, quat_t *old, float b) {
     current->z = b * current->z + (1 - b) * old->z;
 }
 
+// Debug functions
+void printData(vec_t *data, const char *unit) {
+    Serial.print("X: ");
+    Serial.print(data->x, 3);
+    Serial.print(unit);
+    Serial.print("\tY: ");
+    Serial.print(data->y, 3);
+    Serial.print(unit);
+    Serial.print("\tZ: ");
+    Serial.print(data->z, 3);
+    Serial.print(unit);
+    Serial.print("\tdt:");
+    Serial.print(data->dt);
+    Serial.println("ms");
+}
+
+void printData(quat_t *quat) {
+    Serial.print("W: ");
+    Serial.print(quat->w, 3);
+    Serial.print("\tX: ");
+    Serial.print(quat->x, 3);
+    Serial.print("\tY: ");
+    Serial.print(quat->y, 3);
+    Serial.print("\tZ: ");
+    Serial.print(quat->z, 3);
+    Serial.print("\tdt: ");
+    Serial.print(quat->dt);
+    Serial.println("ms");
+}
+
+void printData(attitude_t *att) {
+    Serial.print("R: ");
+    Serial.print(att->roll, 3);
+    Serial.print("\tP: ");
+    Serial.print(att->pitch, 3);
+    Serial.print("\tY: ");
+    Serial.println(att->yaw, 3);
+}
+
+void printData(bar_t *bar) {
+    Serial.print("Alt: ");
+    Serial.print(bar->altitude, 3);
+    Serial.print("\tPres: ");
+    Serial.print(bar->pressure, 3);
+    Serial.print("\tTemp: ");
+    Serial.print(bar->temperature, 3);
+    Serial.print("\tdt: ");
+    Serial.print(bar->dt, 3);
+    Serial.println("ms");
+}
+
+void logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
+    Serial.print(pos->x, 4);
+    Serial.print(",");
+    Serial.print(pos->y, 4);
+    Serial.print(",");
+    Serial.print(pos->z, 4);
+    Serial.print(",");
+    Serial.print(speed->x, 4);
+    Serial.print(",");
+    Serial.print(speed->y, 4);
+    Serial.print(",");
+    Serial.print(speed->z, 4);
+    Serial.print(",");
+    Serial.print(accel->x, 4);
+    Serial.print(",");
+    Serial.print(accel->y, 4);
+    Serial.print(",");
+    Serial.print(accel->z, 4);
+    Serial.println();
+}
+
 /*
 void printRadioData() {
   if (current_time - print_counter > 10000) {

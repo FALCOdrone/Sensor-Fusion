@@ -82,16 +82,15 @@ void initializeImu() {
 
 void getQuaternion(quat_t *quat) {
     Quaternion q;  // [w, x, y, z]         quaternion container
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        quat->w = q.w;
-        quat->x = q.x;
-        quat->y = q.y;
-        quat->z = q.z;
-        quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000000.0f;
-        quat->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    quat->w = q.w;
+    quat->x = q.x;
+    quat->y = q.y;
+    quat->z = q.z;
+    quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000.0f;
+    quat->t = currentTime;
 }
 
 // Euler angles in radians
@@ -99,44 +98,40 @@ void getAttitude(attitude_t *att) {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorFloat gravity;  // [x, y, z]            gravity vector
     float ypr[3];         // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        mpu.dmpGetGravity(&gravity, &q);
-        mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-        att->yaw = ypr[0];
-        att->pitch = ypr[1];
-        att->roll = ypr[2];
-        att->dt = (currentTime >= att->t) ? (currentTime - att->t) / 1000000.0f : (currentTime + (ULONG_MAX - att->t + 1)) / 1000000.0f;
-        att->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    mpu.dmpGetGravity(&gravity, &q);
+    mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+    att->yaw = ypr[0];
+    att->pitch = ypr[1];
+    att->roll = ypr[2];
+    att->dt = (currentTime >= att->t) ? (currentTime - att->t) / 1000.0f : (currentTime + (ULONG_MAX - att->t + 1)) / 1000.0f;
+    att->t = currentTime;
 }
 
 void getRawAccel(vec_t *accel) {
     VectorInt16 aa;  // [x, y, z]            accel sensor measurements
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        mpu.dmpGetAccel(&aa, fifoBuffer);
-        accel->x = aa.x/16384.0f*9.81f;
-        accel->y = aa.y/16384.0f*9.81f;
-        accel->z = aa.z/16384.0f*9.81f;
-        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
-        accel->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    mpu.dmpGetAccel(&aa, fifoBuffer);
+    accel->x = aa.x / 16384.0f * 9.81f;
+    accel->y = aa.y / 16384.0f * 9.81f;
+    accel->z = aa.z / 16384.0f * 9.81f;
+    accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
+    accel->t = currentTime;
 }
 
-// TODO: add scaling factor
 void getRawGyro(vec_t *gyro) {
     VectorInt16 gy;  // [x, y, z]            gyro sensor measurements
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        mpu.dmpGetGyro(&gy, fifoBuffer);
-        gyro->x = gy.x/131.0f*PI/180.0f;
-        gyro->y = gy.y/131.0f*PI/180.0f;
-        gyro->z = gy.z/131.0f*PI/180.0f;
-        gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000000.0f;
-        gyro->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    mpu.dmpGetGyro(&gy, fifoBuffer);
+    gyro->x = gy.x / 131.0f * PI / 180.0f;
+    gyro->y = gy.y / 131.0f * PI / 180.0f;
+    gyro->z = gy.z / 131.0f * PI / 180.0f;
+    gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000.0f;
+    gyro->t = currentTime;
 }
 
 // real acceleration, adjusted to remove gravity
@@ -146,19 +141,18 @@ void getRealAccel(vec_t *accel) {
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
     VectorInt16 aaWorld;  // [x, y, z]            world-frame accel sensor measurements
     VectorFloat gravity;  // [x, y, z]            gravity vector
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        // display real acceleration, adjusted to remove gravity
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        mpu.dmpGetAccel(&aa, fifoBuffer);
-        mpu.dmpGetGravity(&gravity, &q);
-        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-        accel->x = aaReal.x/16384.0f*9.81f;
-        accel->y = aaReal.y/16384.0f*9.81f;
-        accel->z = aaReal.z/16384.0f*9.81f;
-        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
-        accel->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    // display real acceleration, adjusted to remove gravity
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    mpu.dmpGetAccel(&aa, fifoBuffer);
+    mpu.dmpGetGravity(&gravity, &q);
+    mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+    accel->x = aaReal.x / 16384.0f * 9.81f;
+    accel->y = aaReal.y / 16384.0f * 9.81f;
+    accel->z = aaReal.z / 16384.0f * 9.81f;
+    accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
+    accel->t = currentTime;
 }
 
 // world-frame acceleration, adjusted to remove gravity
@@ -169,20 +163,19 @@ void getWorldAccel(vec_t *accel) {
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
     VectorInt16 aaWorld;  // [x, y, z]            world-frame accel sensor measurements
     VectorFloat gravity;  // [x, y, z]            gravity vector
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        unsigned long currentTime = micros();
-        // display real acceleration, adjusted to remove gravity
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        mpu.dmpGetAccel(&aa, fifoBuffer);
-        mpu.dmpGetGravity(&gravity, &q);
-        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-        mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-        accel->x = aaWorld.x/16384.0f*9.81f;
-        accel->y = aaWorld.y/16384.0f*9.81f;
-        accel->z = aaWorld.z/16384.0f*9.81f;
-        accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000000.0f;
-        accel->t = currentTime;
-    }
+    mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
+    unsigned long currentTime = micros();
+    // display real acceleration, adjusted to remove gravity
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    mpu.dmpGetAccel(&aa, fifoBuffer);
+    mpu.dmpGetGravity(&gravity, &q);
+    mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+    mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+    accel->x = aaWorld.x / 16384.0f * 9.81f;
+    accel->y = aaWorld.y / 16384.0f * 9.81f;
+    accel->z = aaWorld.z / 16384.0f * 9.81f;
+    accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
+    accel->t = currentTime;
 }
 
 // Compatibility with old code
@@ -192,74 +185,4 @@ void getAcceleration(vec_t *accel) {
 
 void getGyro(vec_t *gyro) {
     getRawGyro(gyro);
-}
-
-// Debug functions
-void printIMUData(vec_t *data, const char *unit) {
-    Serial.print(data->x);
-    Serial.print(unit);
-    Serial.print(", ");
-    Serial.print(data->y);
-    Serial.print(unit);
-    Serial.print(", ");
-    Serial.print(data->z);
-    Serial.print(unit);
-    Serial.print(", Time:");
-    Serial.print(data->dt);
-    Serial.println("s");
-}
-
-void printIMUData(vec_t *data) {
-    Serial.print(data->x, 6);
-    Serial.print(", ");
-    Serial.print(data->y, 6);
-    Serial.print(", ");
-    Serial.print(data->z, 6);
-    Serial.print(",");
-    Serial.println(data->dt, 6);
-}
-
-void printIMUData(quat_t *quat) {
-    Serial.print(quat->w);
-    Serial.print(", ");
-    Serial.print(quat->x);
-    Serial.print(", ");
-    Serial.print(quat->y);
-    Serial.print(", ");
-    Serial.println(quat->z);
-}
-
-void printIMUData(bar_t *bar) {
-    Serial.print(bar->altitude, 6);
-    Serial.print(", ");
-    Serial.println(bar->dt, 6);
-}
-
-void printIMUData(attitude_t *att) {
-    Serial.print(att->roll);
-    Serial.print(", ");
-    Serial.print(att->pitch);
-    Serial.print(", ");
-    Serial.println(att->yaw);
-}
-
-void logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
-    Serial.print(pos->x, 4);
-    Serial.print(",");
-    Serial.print(pos->y, 4);
-    Serial.print(",");
-    Serial.print(pos->z, 4);
-    Serial.print(",");
-    Serial.print(speed->x, 4);
-    Serial.print(",");
-    Serial.print(speed->y, 4);
-    Serial.print(",");
-    Serial.print(speed->z, 4);
-    Serial.print(",");
-    Serial.print(accel->x, 4);
-    Serial.print(",");
-    Serial.print(accel->y, 4);
-    Serial.print(",");
-    Serial.print(accel->z, 4);
-    Serial.println();
 }

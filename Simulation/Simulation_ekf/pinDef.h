@@ -32,6 +32,7 @@
 // GPS (UART7)
 #define GPS_RX 28
 #define GPS_TX 29
+#define gpsPort Serial7
 
 // Radio (UART6)
 #define USE_SBUS_RX
@@ -53,8 +54,5 @@
 
 // Barometer Address
 #define BARO_ADDR 0x76
-
-// Magnetometer Address
-#define HAS_MAG
 
 #endif

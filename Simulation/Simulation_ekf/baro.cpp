@@ -48,7 +48,7 @@ void getBarometer(bar_t *data) {
     unsigned long currentTime = micros();
 
     BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-    BME280::PresUnit presUnit(BME280::PresUnit_Pa);
+    BME280::PresUnit presUnit(BME280::PresUnit_hPa);
 
     EnvironmentCalculations::AltitudeUnit envAltUnit = EnvironmentCalculations::AltitudeUnit_Meters;
     EnvironmentCalculations::TempUnit envTempUnit = EnvironmentCalculations::TempUnit_Celsius;
@@ -57,8 +57,7 @@ void getBarometer(bar_t *data) {
     float altitude = EnvironmentCalculations::Altitude(pres, envAltUnit, referencePressure, outdoorTemp, envTempUnit);
     data->pressure = pres;
     data->temperature = temp;
-    data->humidity = hum;
     data->altitude = altitude;
-    data->dt = (currentTime >= data->t) ? (currentTime - data->t) / 1000000.0f : (currentTime + (ULONG_MAX - data->t + 1)) / 1000000.0f;
+    data->dt = (currentTime >= data->t) ? (currentTime - data->t) / 1000.0f : (currentTime + (ULONG_MAX - data->t + 1)) / 1000.0f;
     data->t = currentTime;
 }

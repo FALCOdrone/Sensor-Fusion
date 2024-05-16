@@ -5,6 +5,7 @@
 #include <TinyGPSPlus.h>
 
 #include "types.h"
+#include "pinDef.h"
 
 void initializeGPS(int baudRate = 115200, gps_t *coord = NULL);
 void getGPS(gps_t *gpsCoord, vec_t *speed);
