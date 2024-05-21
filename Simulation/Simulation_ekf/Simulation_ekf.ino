@@ -10,12 +10,12 @@
 #include "radio.h"
 #include "utils.h"
 
-#define DEBUG_ALL 1
+#define DEBUG_ALL 0
 #define DEBUG_GPS 0
 #define DEBUG_ACC 1
 #define DEBUG_GYRO 1
-#define DEBUG_MAG 1
-#define DEBUG_BAR 1
+#define DEBUG_MAG 0
+#define DEBUG_BAR 0
 #define DEBUG_POS 0
 #define DEBUG_VEL 0
 #define DEBUG_QUAT 0
@@ -94,31 +94,36 @@ void loop() {
     prevTime = currentTime;
     currentTime = micros();
 
-    // getting values from imu
-    getAcceleration(&accelWithOffset);
-    getGyro(&gyro);
-    if (DEBUG_ACC || DEBUG_ALL) {
-        Serial.print("Acc:\t");
-        printData(&accelWithOffset);
-    }
-    if (DEBUG_GYRO || DEBUG_ALL) {
-        Serial.print("Gyro:\t");
-        printData(&gyro);
-    }
-
-    getGPS(&coordGPS, &speedGPS);
-    if (isGPSUpdated()) {
-        posGPS.x = r * coordGPS.lat - posGPS0.x;              // north
-        posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y;  // east
-        posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
-        posGPS.dt = coordGPS.dt;
-        if (DEBUG_GPS || DEBUG_ALL) {
-            Serial.print("GPS_Pos:\t");
-            printData(&posGPS);
-            Serial.print("GPS_Speed:\t");
-            printData(&speedGPS);
+    // Getting values from imu
+    if (currentTime - accelWithOffset.t >= 5000) {  // 200Hz
+        getAcceleration(&accelWithOffset);
+        if (DEBUG_ACC || DEBUG_ALL) {
+            Serial.print("Acc:\t");
+            printData(&accelWithOffset);
         }
     }
+
+    if (currentTime - gyro.t >= 5000) {  // 200Hz
+        getGyro(&gyro);
+        if (DEBUG_GYRO || DEBUG_ALL) {
+            Serial.print("Gyro:\t");
+            printData(&gyro);
+        }
+    }
+
+    // getGPS(&coordGPS, &speedGPS);
+    // if (isGPSUpdated()) {
+    //     posGPS.x = r * coordGPS.lat - posGPS0.x;              // north
+    //     posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y;  // east
+    //     posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
+    //     posGPS.dt = coordGPS.dt;
+    //     if (DEBUG_GPS || DEBUG_ALL) {
+    //         Serial.print("GPS_Pos:\t");
+    //         printData(&posGPS);
+    //         Serial.print("GPS_Speed:\t");
+    //         printData(&speedGPS);
+    //     }
+    // }
 
     getMag(&mag);
     if (DEBUG_MAG || DEBUG_ALL) {
@@ -132,53 +137,50 @@ void loop() {
         printData(&bar);
     }
 
-    // removing the angular offset
-    accelWithOffset2(0) = accelWithOffset.x;
-    accelWithOffset2(1) = accelWithOffset.y;
-    accelWithOffset2(2) = accelWithOffset.z;
+    // // removing the angular offset
+    // accelWithOffset2(0) = accelWithOffset.x;
+    // accelWithOffset2(1) = accelWithOffset.y;
+    // accelWithOffset2(2) = accelWithOffset.z;
 
-    fixed_accel = R * accelWithOffset2;  // body frame accelleration without offset
-    yawMag = estimation.yawFromMag(mag, quat);
+    // fixed_accel = R * accelWithOffset2;  // body frame accelleration without offset
+    // yawMag = estimation.yawFromMag(mag, quat);
 
-    // EKF estimation for attitude, speed and position
-    // estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
-    getQuaternion(&quat);
-    getAttitude(&att);
-    estimation.xt_at << quat.w, quat.x, quat.y, quat.z;
-    estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
-    estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt/1000.0f);  // prediction of the (x, y, z) position and velocity
+    // // EKF estimation for attitude, speed and position
+    // // estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
+    // getQuaternion(&quat);
+    // getAttitude(&att);
+    // estimation.xt_at << quat.w, quat.x, quat.y, quat.z;
+    // estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
+    // estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt/1000.0f);  // prediction of the (x, y, z) position and velocity
 
-    // compute the update from gps
-    if (isGPSUpdated()) {
-        estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt/1000.0f);
-    }
-    estimation.updateFromMag(yawMag, mag.dt/1000.0f);
-    // estimation.updateFromBar(bar.altitude, bar.dt/1000.0f);
+    // // compute the update from gps
+    // if (isGPSUpdated()) {
+    //     estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt/1000.0f);
+    // }
+    // estimation.updateFromMag(yawMag, mag.dt/1000.0f);
+    // // estimation.updateFromBar(bar.altitude, bar.dt/1000.0f);
 
-    estimation.getPosVel(&pos, &speed);
+    // estimation.getPosVel(&pos, &speed);
 
-    if (DEBUG_QUAT || DEBUG_ALL) {
-        Serial.print("EKF_Quat:\t");
-        printData(&quat);
-    }
-    if (DEBUG_YPR || DEBUG_ALL) {
-        Serial.print("EKF_YPR:\t");
-        printData(&att);
-    }
-    if (DEBUG_POS || DEBUG_ALL) {
-        Serial.print("EKF_Pos:\t");
-        printData(&pos);
-    }
-    if (DEBUG_VEL || DEBUG_ALL) {
-        Serial.print("EKF_Speed:\t");
-        printData(&speed);
-    }
+    // if (DEBUG_QUAT || DEBUG_ALL) {
+    //     Serial.print("EKF_Quat:\t");
+    //     printData(&quat);
+    // }
+    // if (DEBUG_YPR || DEBUG_ALL) {
+    //     Serial.print("EKF_YPR:\t");
+    //     printData(&att);
+    // }
+    // if (DEBUG_POS || DEBUG_ALL) {
+    //     Serial.print("EKF_Pos:\t");
+    //     printData(&pos);
+    // }
+    // if (DEBUG_VEL || DEBUG_ALL) {
+    //     Serial.print("EKF_Speed:\t");
+    //     printData(&speed);
+    // }
 
-    // TO BE REMOVED
-    Serial.println();
-
-    feedGPS();
-    loopRate(100);
+    // feedGPS();
+    loopRate(2000);
 }
 
 void loopRate(int freq) {

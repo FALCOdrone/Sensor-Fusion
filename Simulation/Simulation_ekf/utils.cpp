@@ -47,9 +47,8 @@ void printData(vec_t *data, const char *unit) {
     Serial.print("\tZ: ");
     Serial.print(data->z, 3);
     Serial.print(unit);
-    Serial.print("\tdt:");
-    Serial.print(data->dt);
-    Serial.println("ms");
+    Serial.print("\tdt: ");
+    Serial.println(data->dt);
 }
 
 void printData(quat_t *quat) {
@@ -62,8 +61,7 @@ void printData(quat_t *quat) {
     Serial.print("\tZ: ");
     Serial.print(quat->z, 3);
     Serial.print("\tdt: ");
-    Serial.print(quat->dt);
-    Serial.println("ms");
+    Serial.println(quat->dt);
 }
 
 void printData(attitude_t *att) {
@@ -83,8 +81,7 @@ void printData(bar_t *bar) {
     Serial.print("\tTemp: ");
     Serial.print(bar->temperature, 3);
     Serial.print("\tdt: ");
-    Serial.print(bar->dt, 3);
-    Serial.println("ms");
+    Serial.println(bar->dt, 3);
 }
 
 void logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
