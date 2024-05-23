@@ -1,3 +1,4 @@
+
 import argparse
 import serial
 import datetime
@@ -11,7 +12,7 @@ import serial.tools.list_ports
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
-    "-d", "--device", help="device to read from", default="COM8")
+    "-d", "--device", help="device to read from", default="COM3")
 parser.add_argument("-s", "--speed", help="speed in bps",
                     default=115200, type=int)
 args = parser.parse_args()
@@ -24,15 +25,16 @@ data = {}
 started = False
 
 # Set the logging duration to 4 hours (in seconds)
-logging_duration = 4*60*60
+logging_duration = 120
 
 while len(serial.tools.list_ports.comports()) == 0:
     time.sleep(1)
+    
 
 with serial.Serial(args.device, args.speed) as ser, open(outputFilePath, mode='wb') as outputFile:
     print("Logging started. Ctrl-C to stop.")
     try:
-        while True:
+        while True :
             while not started:
                 d = ser.readline().strip().decode('ascii')
                 print(d)
@@ -65,12 +67,13 @@ with serial.Serial(args.device, args.speed) as ser, open(outputFilePath, mode='w
             # Concatenate the new values to the existing array
             data[type_] = np.concatenate(
                 (data[type_], val_array.reshape(-1, 1)), axis=1)
-            # print(type_, data[type_])
+            #print(type_, data[type_])
 
     except KeyboardInterrupt:
         print("Logging stopped, saving to file")
+        print(time.time() - start_time)
 
-print(data)
+#print(data)
 with open(outputFilePath, "wb") as f:
     for type_ in data.keys():
         scipy.io.savemat(f, {'data': data})

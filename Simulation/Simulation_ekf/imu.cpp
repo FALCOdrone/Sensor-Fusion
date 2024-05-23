@@ -43,15 +43,15 @@ void initializeImu() {
 
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
-
+    
     // TODO: get offset from IMU_Zero example file
-    mpu.setXGyroOffset(-19);
-    mpu.setYGyroOffset(-10);
-    mpu.setZGyroOffset(-65);
-    mpu.setXAccelOffset(-851);
-    mpu.setYAccelOffset(-5142);
-    mpu.setZAccelOffset(1359);
-
+    /*mpu.setXGyroOffset(-20);
+    mpu.setYGyroOffset(-13);
+    mpu.setZGyroOffset(-75);
+    mpu.setXAccelOffset(-805);
+    mpu.setYAccelOffset(-5158);
+    mpu.setZAccelOffset(1381);
+    */
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // Calibration Time: generate offsets and calibrate our MPU6050
@@ -59,6 +59,7 @@ void initializeImu() {
         mpu.CalibrateGyro(6);
         Serial.println();
         mpu.PrintActiveOffsets();
+        
         // turn on the DMP, now that it's ready
         Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
