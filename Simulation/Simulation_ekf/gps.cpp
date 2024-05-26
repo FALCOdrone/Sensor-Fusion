@@ -6,15 +6,6 @@ static const uint32_t GPSBaud = 115200;
 TinyGPSPlus gps;
 
 
-byte gpsBaudConfig[] = {  // 115200
-    0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00,
-    0xC2, 0x01, 0x00, 0x23, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDC, 0x5E};
-byte gpsRateConfig[] = {  // 50ms
-    0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x32, 0x00, 0x01, 0x00, 0x01, 0x00, 0x48, 0xE6};
-byte gpsSaveConfig[] = {
-    // Save Config
-    0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-    0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x21, 0xAF};
 
 static void smartDelay(unsigned long ms)
 {
@@ -28,7 +19,16 @@ static void smartDelay(unsigned long ms)
 
 void initializeGPS(int gpsBaud, gps_t *coord) {
     // GPS serial init
-    gpsPort.begin(gpsBaud);
+    //gpsPort.begin(gpsBaud);
+    byte gpsBaudConfig[] = { // 115200
+    0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00,
+    0xC2, 0x01, 0x00, 0x23, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDC, 0x5E};
+    byte gpsRateConfig[] = { // 50ms
+    0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x32, 0x00, 0x01, 0x00, 0x01, 0x00, 0x48, 0xE6};
+    byte gpsSaveConfig[] = {
+    // Save Config
+    0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+    0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x21, 0xAF};
 
     // GPS config
     
@@ -38,7 +38,7 @@ void initializeGPS(int gpsBaud, gps_t *coord) {
     gpsPort.write(gpsSaveConfig, sizeof(gpsSaveConfig));
     gpsPort.end();
 
-    gpsPort.begin(115200);
+    gpsPort.begin(GPSBaud);
     
 
     // Set the initial position
@@ -48,7 +48,7 @@ void initializeGPS(int gpsBaud, gps_t *coord) {
         while (gps.location.isUpdated() == 0) {
             //feedGPS();
             
-            if (millis() - startTime > 5000) {
+            if (millis() - startTime > 10000) {
                 Serial.println(F("GPS not found, using (0, 0) as starting position"));
                 coord->lat = 0;
                 coord->lon = 0;
@@ -59,10 +59,14 @@ void initializeGPS(int gpsBaud, gps_t *coord) {
             }
             Serial.println(gps.satellites.value());
             smartDelay(1000);
+            Serial.println("finito Smartdelay");
             
         }
         // Store starting position
+        Serial.println("iniziando Get");
+
         getGPS(coord, NULL);
+        Serial.println("finito Get");
     }
 }
 
@@ -71,6 +75,7 @@ bool isGPSUpdated() {
 }
 
 void getGPS(gps_t *gpsCoord, vec_t *speed) {
+  
     if (gps.location.isUpdated()) {
         gpsCoord->lat = gps.location.lat();
         gpsCoord->lon = gps.location.lng();

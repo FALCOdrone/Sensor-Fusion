@@ -168,8 +168,8 @@ void loop() {
         printData(&quat);
     }
     if (DEBUG_MAGYAW || DEBUG_ALL) {
-        Serial.print("YAW_mag:\t");
-        Serial.print(&yawMag);
+        //Serial.print("YAW_mag:\t");
+        //Serial.print(yawMag);   //da problemi con serialtomat.py
     }    
     if (DEBUG_YPR || DEBUG_ALL) {
          Serial.print("EKF_YPR:\t");
