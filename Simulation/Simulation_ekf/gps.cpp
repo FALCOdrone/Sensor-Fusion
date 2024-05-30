@@ -6,8 +6,7 @@ static const uint32_t GPSBaud = 115200;
 TinyGPSPlus gps;
 
 
-
-static void smartDelay(unsigned long ms)
+void smartDelay(unsigned long ms)
 {
   unsigned long start = millis();
   do
@@ -64,7 +63,6 @@ void initializeGPS(int gpsBaud, gps_t *coord) {
         }
         // Store starting position
         Serial.println("iniziando Get");
-
         getGPS(coord, NULL);
         Serial.println("finito Get");
     }
@@ -74,27 +72,39 @@ bool isGPSUpdated() {
     return gps.location.isUpdated() || gps.speed.isUpdated() || gps.course.isUpdated();
 }
 
-void getGPS(gps_t *gpsCoord, vec_t *speed) {
-  
-    if (gps.location.isUpdated()) {
+
+bool getGPS(gps_t *gpsCoord, vec_t *speed) {
+    bool update_location = gps.location.isUpdated();  
+
+    if (update_location) {
         gpsCoord->lat = gps.location.lat();
         gpsCoord->lon = gps.location.lng();
         gpsCoord->alt = gps.altitude.meters();
         gpsCoord->t = gps.time.value();
         gpsCoord->dt = gps.time.age() * 1000.0;  // In microseconds
+        //Serial.println("location is updated");
+        Serial.println("lat, lng, alt");
+        Serial.println(gps.location.lat(), 6);
+        Serial.println(gps.location.lng(), 6);
+        Serial.println( gps.altitude.meters(), 6);
+        Serial.println(gps.hdop.hdop());
     }
 
-    if (gps.speed.isUpdated() && gps.course.isUpdated()) {
+    bool update_speed = gps.speed.isUpdated();  
+
+    if (update_speed && speed != NULL) {
         // Convert course and speed to x and y components
         speed->x = gps.speed.mps() * cos(gps.course.deg() * DEG_TO_RAD);
         speed->y = gps.speed.mps() * sin(gps.course.deg() * DEG_TO_RAD);
         speed->dt = gps.speed.age();  // In milliseconds
     }
+    return update_location || update_speed;
 }
 
 // To be ran frequently
 void feedGPS() {
     while (gpsPort.available() > 0) {
         gps.encode(gpsPort.read());
+
     }
 }

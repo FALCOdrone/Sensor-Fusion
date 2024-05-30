@@ -10,10 +10,10 @@
 #include "radio.h"
 #include "utils.h"
 
-#define DEBUG_ALL 1
-#define DEBUG_GPS 1
-#define DEBUG_MAGYAW 1
-#define DEBUG_ACC 1
+#define DEBUG_ALL 0
+#define DEBUG_GPS 0
+#define DEBUG_MAGYAW 0
+#define DEBUG_ACC 0
 #define DEBUG_GYRO 0
 #define DEBUG_MAG 0
 #define DEBUG_BAR 0
@@ -83,9 +83,9 @@ void setup() {
     bar.t = currentTime;
 
     // TODO: da dove prende coordGPS?
-    lat0 = coordGPS.lat;
-    posGPS0.x = r * coordGPS.lat;              // north
-    posGPS0.y = r * coordGPS.lon * cos(lat0);  // east
+    lat0 = coordGPS.lat * PI/180;
+    posGPS0.x = r * coordGPS.lat * PI/180;              // north
+    posGPS0.y = r * coordGPS.lon * PI/180 * cos(lat0);  // east
     posGPS0.z = coordGPS.alt;                  // up
 
     Serial.println("Initialization done");
@@ -112,10 +112,11 @@ void loop() {
         }
     }
 
-    getGPS(&coordGPS, &speedGPS);
-     if (isGPSUpdated()) {
-         posGPS.x = r * coordGPS.lat - posGPS0.x;              // north
-         posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y;  // east
+    //getGPS(&coordGPS, &speedGPS);
+
+     if (getGPS(&coordGPS, &speedGPS)) {
+         posGPS.x = r * coordGPS.lat * PI/180 - posGPS0.x;              // north
+         posGPS.y = r * coordGPS.lon * PI/180 * cos(lat0) - posGPS0.y;  // east
          posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
          posGPS.dt = coordGPS.dt;
           if (DEBUG_GPS || DEBUG_ALL) {
@@ -184,8 +185,8 @@ void loop() {
          printData(&speed);
      }
 
-    // feedGPS();
-    loopRate(2000);
+     feedGPS();
+    //loopRate(10);
 }
 
 void loopRate(int freq) {
@@ -202,7 +203,8 @@ void loopRate(int freq) {
 
     // Sit in loop until appropriate time has passed
     while (invFreq > (checker - currentTime)) {
-        feedGPS();
-        checker = micros();
+       feedGPS();  // test using smartDelay(1);
+      //smartDelay(0);
+      checker = micros();
     }
 }
