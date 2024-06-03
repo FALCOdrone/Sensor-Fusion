@@ -2,10 +2,12 @@
 
 Adafruit_HMC5883_Unified magSensor = Adafruit_HMC5883_Unified(12345);
 
-void initializeMag() {
+bool initializeMag() {
     if (!magSensor.begin()) {
         Serial.println("Could not find a valid HMC5883 sensor, check wiring!");
+        return false;
     }
+    return true;
 }
 
 void getMag(vec_t *magData) {

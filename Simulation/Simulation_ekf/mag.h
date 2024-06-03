@@ -10,7 +10,7 @@
 
 #include "types.h"
 
-void initializeMag();
+bool initializeMag();
 void getMag(vec_t *magData);
 
 #endif

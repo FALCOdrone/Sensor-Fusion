@@ -7,7 +7,7 @@
 #include "types.h"
 #include "pinDef.h"
 
-void initializeGPS(int baudRate = 115200, gps_t *coord = NULL);
+bool initializeGPS(int baudRate = 115200, gps_t *coord = NULL);
 bool getGPS(gps_t *gpsCoord, vec_t *speed);
 bool isGPSUpdated();
 void feedGPS();

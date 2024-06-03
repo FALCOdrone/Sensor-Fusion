@@ -1,4 +1,3 @@
-
 import argparse
 import serial
 import datetime

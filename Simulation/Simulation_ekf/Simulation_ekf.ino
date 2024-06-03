@@ -11,16 +11,16 @@
 #include "utils.h"
 
 #define DEBUG_ALL 0
-#define DEBUG_GPS 0
-#define DEBUG_MAGYAW 0
-#define DEBUG_ACC 0
+#define DEBUG_GPS 1
+#define DEBUG_MAGYAW 1
+#define DEBUG_ACC 1
 #define DEBUG_GYRO 0
 #define DEBUG_MAG 0
-#define DEBUG_BAR 0
+#define DEBUG_BAR 1
 #define DEBUG_POS 1
 #define DEBUG_VEL 1
 #define DEBUG_QUAT 0
-#define DEBUG_YPR 1
+#define DEBUG_YPR 0
 
 // variables
 vec_t accelWithOffset;
@@ -28,7 +28,7 @@ VectorXf accelWithOffset2(3);
 vec_t gyro;
 VectorXf fixed_accel(3);
 vec_t posGPS;
-vec_t posGPS0;  // position (from gps) of starting point
+vec_t posGPS0; // position (from gps) of starting point
 gps_t coordGPS;
 vec_t speedGPS;
 vec_t mag;
@@ -37,9 +37,14 @@ vec_t speed;
 quat_t quat;
 attitude_t att;
 bar_t bar;
+float altitude;
 float yawMag;
-float lat0;         // latitude at starting point, used for projection (lat long -> x y)
-float r = 6371000;  // earth radius (m)
+float lat0;        // latitude at starting point, used for projection (lat long -> x y)
+float r = 6371000; // earth radius (m)
+
+bool validGPS;
+bool validMag;
+bool validBaro;
 
 // Parameters for EKF
 const int Nstate = 7;
@@ -55,14 +60,15 @@ int GPSrate = 1;
 // initialization of the constructor for estimation
 QuadEstimatorEKF estimation;
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("Initialization starting");
 
     initializeImu();
-    initializeGPS(115200, &coordGPS);
-    initializeMag();
-    initializeBarometer();
+    validGPS = initializeGPS(115200, &coordGPS);
+    validMag = initializeMag();
+    validBaro = initializeBarometer();
     // initializeMotors();
     // initializeRadio();
 
@@ -83,69 +89,85 @@ void setup() {
     bar.t = currentTime;
 
     // TODO: da dove prende coordGPS?
-    lat0 = coordGPS.lat * PI/180;
-    posGPS0.x = r * coordGPS.lat * PI/180;              // north
-    posGPS0.y = r * coordGPS.lon * PI/180 * cos(lat0);  // east
-    posGPS0.z = coordGPS.alt;                  // up
-
+    if (validGPS)
+    {
+        lat0 = coordGPS.lat;
+        posGPS0.x = r * coordGPS.lat;             // north
+        posGPS0.y = r * coordGPS.lon * cos(lat0); // east
+        posGPS0.z = coordGPS.alt;                 // up
+    }
     Serial.println("Initialization done");
 }
 
-void loop() {
+void loop()
+{
     prevTime = currentTime;
     currentTime = micros();
 
     // Getting values from imu
-    if (currentTime - accelWithOffset.t >= 5000) {  // 200Hz
+    if (micros() - accelWithOffset.t >= 5000)
+    { // 200Hz
         getAcceleration(&accelWithOffset);
-        if (DEBUG_ACC || DEBUG_ALL) {
+        if (DEBUG_ACC || DEBUG_ALL)
+        {
             Serial.print("Acc:\t");
             printData(&accelWithOffset);
         }
     }
 
-    if (currentTime - gyro.t >= 5000) {  // 200Hz
+    if (micros() - gyro.t >= 5000)
+    { // 200Hz
         getGyro(&gyro);
-        if (DEBUG_GYRO || DEBUG_ALL) {
+        if (DEBUG_GYRO || DEBUG_ALL)
+        {
             Serial.print("Gyro:\t");
             printData(&gyro);
         }
     }
 
-    //getGPS(&coordGPS, &speedGPS);
-
-     if (getGPS(&coordGPS, &speedGPS)) {
-         posGPS.x = r * coordGPS.lat * PI/180 - posGPS0.x;              // north
-         posGPS.y = r * coordGPS.lon * PI/180 * cos(lat0) - posGPS0.y;  // east
-         posGPS.z = -coordGPS.alt + posGPS0.z;                 // down
-         posGPS.dt = coordGPS.dt;
-          if (DEBUG_GPS || DEBUG_ALL) {
-             Serial.print("GPS_Pos:\t");
-             printData(&posGPS);
-             Serial.print("GPS_Speed:\t");
-             printData(&speedGPS);
-         }
-     }
-
-    getMag(&mag);
-    if (DEBUG_MAG || DEBUG_ALL) {
-        Serial.print("Mag:\t");
-        printData(&mag);
+    if (getGPS(&coordGPS, &speedGPS) && validGPS)
+    {
+        posGPS.x = r * coordGPS.lat - posGPS0.x;             // north
+        posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y; // east
+        posGPS.z = -coordGPS.alt + posGPS0.z;                // down
+        posGPS.dt = coordGPS.dt;
+        if (DEBUG_GPS || DEBUG_ALL)
+        {
+            Serial.print("GPS_Pos:\t");
+            printData(&posGPS);
+            Serial.print("GPS_Speed:\t");
+            printData(&speedGPS);
+        }
     }
 
-    getBarometer(&bar);
-    if (DEBUG_BAR || DEBUG_ALL) {
-        Serial.print("Bar:\t");
-        printData(&bar);
+    if (micros() - mag.t > 5000)
+    {
+        getMag(&mag);
+        if (DEBUG_MAG || DEBUG_ALL)
+        {
+            Serial.print("Mag:\t");
+            printData(&mag);
+        }
+    }
+
+    if (micros() - bar.t > 5000)
+    {
+        getBarometer(&bar);
+        altitude = bar.altitude;
+        if (DEBUG_BAR || DEBUG_ALL)
+        {
+            Serial.print("Bar:\t");
+            printData(&bar);
+        }
     }
 
     // // removing the angular offset
-     accelWithOffset2(0) = accelWithOffset.x;
-     accelWithOffset2(1) = accelWithOffset.y;
-     accelWithOffset2(2) = accelWithOffset.z;
+    accelWithOffset2(0) = accelWithOffset.x;
+    accelWithOffset2(1) = accelWithOffset.y;
+    accelWithOffset2(2) = accelWithOffset.z;
 
-     fixed_accel = R * accelWithOffset2;  // body frame accelleration without offset
-     yawMag = estimation.yawFromMag(mag, quat);
+    fixed_accel = R * accelWithOffset2; // body frame accelleration without offset
+    yawMag = estimation.yawFromMag(mag, quat);
 
     // // EKF estimation for attitude, speed and position
     // // estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
@@ -153,43 +175,50 @@ void loop() {
     getAttitude(&att);
     estimation.xt_at << quat.w, quat.x, quat.y, quat.z;
     estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
-    estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt/1000.0f);  // prediction of the (x, y, z) position and velocity
+    estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt / 1000.0f); // prediction of the (x, y, z) position and velocity
 
     // // compute the update from gps
-     if (isGPSUpdated()) {
-         estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt/1000.0f);
-     }
-     estimation.updateFromMag(yawMag, mag.dt/1000.0f);
-     estimation.updateFromBar(bar.altitude, bar.dt/1000.0f);
+    if (isGPSUpdated() && validGPS)
+    {
+        estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
+    }
+    estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
+    estimation.updateFromBar(altitude, bar.dt / 1000.0f);
 
-     estimation.getPosVel(&pos, &speed);
+    estimation.getPosVel(&pos, &speed);
 
-    if (DEBUG_QUAT || DEBUG_ALL) {
+    if (DEBUG_QUAT || DEBUG_ALL)
+    {
         Serial.print("EKF_Quat:\t");
         printData(&quat);
     }
-    if (DEBUG_MAGYAW || DEBUG_ALL) {
-        //Serial.print("YAW_mag:\t");
-        //Serial.print(yawMag);   //da problemi con serialtomat.py
-    }    
-    if (DEBUG_YPR || DEBUG_ALL) {
-         Serial.print("EKF_YPR:\t");
-         printData(&att);
+    if (DEBUG_MAGYAW || DEBUG_ALL)
+    {
+        // Serial.print("YAW_mag:\t");
+        // Serial.print(yawMag);   //da problemi con serialtomat.py
     }
-    if (DEBUG_POS || DEBUG_ALL) {
-         Serial.print("EKF_Pos:\t");
-         printData(&pos);
-     }
-     if (DEBUG_VEL || DEBUG_ALL) {
-         Serial.print("EKF_Speed:\t");
-         printData(&speed);
-     }
+    if (DEBUG_YPR || DEBUG_ALL)
+    {
+        Serial.print("EKF_YPR:\t");
+        printData(&att);
+    }
+    if (DEBUG_POS || DEBUG_ALL)
+    {
+        Serial.print("EKF_Pos:\t");
+        printData(&pos);
+    }
+    if (DEBUG_VEL || DEBUG_ALL)
+    {
+        Serial.print("EKF_Speed:\t");
+        printData(&speed);
+    }
 
-     feedGPS();
-    //loopRate(10);
+    feedGPS();
+    loopRate(2000);
 }
 
-void loopRate(int freq) {
+void loopRate(int freq)
+{
     // DESCRIPTION: Regulate main loop rate to specified frequency in Hz
     /*
      * It's good to operate at a constant loop rate for filters to remain stable and whatnot. Interrupt routines running in the
@@ -202,9 +231,9 @@ void loopRate(int freq) {
     unsigned long checker = micros();
 
     // Sit in loop until appropriate time has passed
-    while (invFreq > (checker - currentTime)) {
-       feedGPS();  // test using smartDelay(1);
-      //smartDelay(0);
-      checker = micros();
+    while (invFreq > (checker - currentTime))
+    {
+        feedGPS();
+        checker = micros();
     }
 }

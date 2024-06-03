@@ -1,5 +1,7 @@
 #include "baro.h"
 
+#define MAX_VAR_BARO 1.0
+
 /*
 TODO:
 - Change environment values for Milan
@@ -8,8 +10,8 @@ TODO:
 // Assumed environmental values:
 float referencePressure = 1018;  // hPa local QFF (official meteor-station reading)
 float outdoorTemp = 20;          // °C  measured local outdoor temp.
-float barometerAltitude = 121;   // meters ... map readings + barometer position
-
+float bar0 = 0;   // meters ... map readings + barometer position
+   
 // Default : forced mode, standby time = 1000 ms
 // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off, spi off
 BME280I2C::Settings settings(
@@ -24,7 +26,7 @@ BME280I2C::Settings settings(
 
 BME280I2C bme(settings);
 
-void initializeBarometer() {
+bool initializeBarometer() {
     Wire.begin();
     while (!bme.begin()) {
         Serial.println("Could not find BME280 sensor!");
@@ -41,6 +43,47 @@ void initializeBarometer() {
     default:
         Serial.println("Found UNKNOWN sensor! Error!");
     }
+    
+    int numSamples = 5;
+    bar_t bar[numSamples];
+    double var;
+    double mean;
+    int k = 0;
+    double prev = micros();
+    
+    while (k < numSamples || var > MAX_VAR_BARO )
+    {
+        getBarometer(&bar[k%numSamples]);
+
+        double dt = micros() - prev;
+        Serial.printf("%d, %0.12f: %0.12f\n", k, dt, bar[k%numSamples].altitude);
+        prev = micros();
+        if (k >= numSamples-1)
+        {
+            var = 0.0;
+            mean = 0.0;
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                mean += bar[i].altitude;
+            }
+            mean /= numSamples;
+            
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                var += pow(bar[i].altitude - mean, 2);
+            }
+            var /= numSamples;
+
+            Serial.printf("varAlt: %0.12f, mean: %0.12f", var, mean);
+        }
+        
+        k++;
+    }
+    bar0 = mean;
+    
+    return true;
 }
 
 void getBarometer(bar_t *data) {
@@ -54,10 +97,11 @@ void getBarometer(bar_t *data) {
     EnvironmentCalculations::TempUnit envTempUnit = EnvironmentCalculations::TempUnit_Celsius;
 
     bme.read(pres, temp, hum, tempUnit, presUnit);
+    
     float altitude = EnvironmentCalculations::Altitude(pres, envAltUnit, referencePressure, outdoorTemp, envTempUnit);
     data->pressure = pres;
     data->temperature = temp;
-    data->altitude = altitude;
+    data->altitude = altitude - bar0;
     data->dt = (currentTime >= data->t) ? (currentTime - data->t) / 1000.0f : (currentTime + (ULONG_MAX - data->t + 1)) / 1000.0f;
     data->t = currentTime;
 }
