@@ -1,7 +1,7 @@
 #include "gps.h"
 
-#define MAX_VAR_DEG_LAT 2 / 111320.0
-#define MAX_VAR_DEG_LONG 2 / (111320.0 * cos(45.4778828 / 180 * PI)) // latitiude set in front of building 6
+#define MAX_VAR_DEG_LAT pow((2 / 111320.0),2) //2m variance
+#define MAX_VAR_DEG_LONG pow(2 / (111320.0 * cos(45.4778828 / 180 * PI)),2) // latitiude set in front of building 6
 #define MAX_VAR_ALT 0.2
 
 static const uint32_t GPSBaud = 115200;
