@@ -76,7 +76,7 @@ bool initializeBarometer() {
             }
             var /= numSamples;
 
-            Serial.printf("varAlt: %0.12f, mean: %0.12f", var, mean);
+            Serial.printf("varAlt: %0.12f, mean: %0.12f\n", var, mean);
         }
         
         k++;

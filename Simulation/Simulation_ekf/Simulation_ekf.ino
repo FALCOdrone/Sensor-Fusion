@@ -14,7 +14,7 @@
 #define DEBUG_GPS 1
 #define DEBUG_MAGYAW 1
 #define DEBUG_ACC 1
-#define DEBUG_GYRO 0
+#define DEBUG_GYRO 1
 #define DEBUG_MAG 0
 #define DEBUG_BAR 1
 #define DEBUG_POS 1

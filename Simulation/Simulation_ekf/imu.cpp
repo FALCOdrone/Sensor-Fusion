@@ -1,5 +1,8 @@
 #include "imu.h"
 
+#define GYRO_MAX_VAR 1
+#define ACC_MAX_VAR 1
+
 #ifdef UDOO
 MPU6500 mpu;  // UDOO KEY
 #else
@@ -50,8 +53,8 @@ void initializeImu() {
     mpu.setZGyroOffset(-75);
     mpu.setXAccelOffset(-805);
     mpu.setYAccelOffset(-5158);
-    mpu.setZAccelOffset(1381);
-    */
+    mpu.setZAccelOffset(1381);*/
+    
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // Calibration Time: generate offsets and calibrate our MPU6050
