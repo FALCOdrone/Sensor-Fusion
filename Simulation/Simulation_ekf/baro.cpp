@@ -1,6 +1,6 @@
 #include "baro.h"
 
-#define MAX_VAR_BARO 1.0
+#define MAX_VAR_BARO pow(1.0,2) // meters^2
 
 /*
 TODO:
