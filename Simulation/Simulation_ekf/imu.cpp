@@ -54,12 +54,19 @@ void initializeImu() {
     mpu.setXAccelOffset(-805);
     mpu.setYAccelOffset(-5158);
     mpu.setZAccelOffset(1381);*/
+
+    mpu.setXGyroOffset(0);
+    mpu.setYGyroOffset(0);
+    mpu.setZGyroOffset(0);
+    mpu.setXAccelOffset(0);
+    mpu.setYAccelOffset(0);
+    mpu.setZAccelOffset(0);
     
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // Calibration Time: generate offsets and calibrate our MPU6050
-        mpu.CalibrateAccel(6);
-        mpu.CalibrateGyro(6);
+        //mpu.CalibrateAccel(6);
+        //mpu.CalibrateGyro(6);
         Serial.println();
         mpu.PrintActiveOffsets();
         
