@@ -1,9 +1,6 @@
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+Simulation/Simulation_ekf/.vscode/*
+
 
 # Local History for Visual Studio Code
 .history/

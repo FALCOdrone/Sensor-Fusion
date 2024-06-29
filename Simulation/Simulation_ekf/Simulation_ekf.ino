@@ -21,6 +21,8 @@
 #define DEBUG_VEL 1
 #define DEBUG_QUAT 0
 #define DEBUG_YPR 0
+#define DEBUG_SERIALCOMMANDS 1
+
 
 // variables
 vec_t accelWithOffset;
@@ -63,8 +65,23 @@ QuadEstimatorEKF estimation;
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Initialization starting");
+    bool start = false;
+    while(DEBUG_SERIALCOMMANDS && start == false) { //if DEBUG_SERIALCOMMANDS is 0, the program will start immediately
+        // wait for bytes available to read
+        while(!Serial.available()) {
+            delay(10);
+        }
+        // Read the incoming byte
+        char incomingChar = Serial.read();
 
+        // If the byte is 's', start the program
+        if (incomingChar == 's'){
+            Serial.println("Initialization starting");
+            start = true;
+        }
+        else
+            Serial.println("Initialization not started, waiting for 's' command");
+    }
     initializeImu();
     validGPS = initializeGPS(115200, &coordGPS);
     validMag = initializeMag();
