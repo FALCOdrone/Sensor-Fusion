@@ -11,24 +11,23 @@
 #include "utils.h"
 
 #define DEBUG_ALL 0
-#define DEBUG_GPS 1
-#define DEBUG_MAGYAW 1
+#define DEBUG_GPS 0
+#define DEBUG_MAGYAW 0
 #define DEBUG_ACC 1
-#define DEBUG_GYRO 1
+#define DEBUG_GYRO 0
 #define DEBUG_MAG 0
-#define DEBUG_BAR 1
-#define DEBUG_POS 1
-#define DEBUG_VEL 1
+#define DEBUG_BAR 0
+#define DEBUG_POS 0
+#define DEBUG_VEL 0
 #define DEBUG_QUAT 0
 #define DEBUG_YPR 0
-#define DEBUG_SERIALCOMMANDS 1
+#define DEBUG_SERIALCOMMANDS 0
 
 
 // variables
-vec_t accelWithOffset;
-VectorXf accelWithOffset2(3);
+vec_t accIMUFrame;
+Vector3f accBodyFrame;
 vec_t gyro;
-VectorXf fixed_accel(3);
 vec_t posGPS;
 vec_t posGPS0; // position (from gps) of starting point
 gps_t coordGPS;
@@ -39,7 +38,6 @@ vec_t speed;
 quat_t quat;
 attitude_t att;
 bar_t bar;
-float altitude;
 float yawMag;
 float lat0;        // latitude at starting point, used for projection (lat long -> x y)
 float r = 6371000; // earth radius (m)
@@ -100,12 +98,11 @@ void setup()
 
     // Get first readings to fix the time for the first loop
     currentTime = micros();
-    accelWithOffset.t = currentTime;
+    accIMUFrame.t = currentTime;
     gyro.t = currentTime;
     mag.t = currentTime;
     bar.t = currentTime;
 
-    // TODO: da dove prende coordGPS?
     if (validGPS)
     {
         lat0 = coordGPS.lat;
@@ -122,13 +119,13 @@ void loop()
     currentTime = micros();
 
     // Getting values from imu
-    if (micros() - accelWithOffset.t >= 5000)
+    if (micros() - accIMUFrame.t >= 5000)
     { // 200Hz
-        getAcceleration(&accelWithOffset);
+        getAcceleration(&accIMUFrame);
         if (DEBUG_ACC || DEBUG_ALL)
         {
             Serial.print("Acc:\t");
-            printData(&accelWithOffset);
+            printData(&accIMUFrame);
         }
     }
 
@@ -142,12 +139,15 @@ void loop()
         }
     }
 
-    if (getGPS(&coordGPS, &speedGPS) && validGPS)
+    if (validGPS && getGPS(&coordGPS, &speedGPS))
     {
         posGPS.x = r * coordGPS.lat - posGPS0.x;             // north
         posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y; // east
         posGPS.z = -coordGPS.alt + posGPS0.z;                // down
         posGPS.dt = coordGPS.dt;
+
+       estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
+
         if (DEBUG_GPS || DEBUG_ALL)
         {
             Serial.print("GPS_Pos:\t");
@@ -157,9 +157,13 @@ void loop()
         }
     }
 
-    if (micros() - mag.t > 5000)
-    {
+    if (validMag && micros() - mag.t > 5000)
+    { // 200Hz
         getMag(&mag);
+
+        yawMag = estimation.yawFromMag(mag, quat);
+        estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
+
         if (DEBUG_MAG || DEBUG_ALL)
         {
             Serial.print("Mag:\t");
@@ -167,10 +171,12 @@ void loop()
         }
     }
 
-    if (micros() - bar.t > 5000)
-    {
+    if (validBaro && micros() - bar.t > 5000)
+    {  // 200Hz
         getBarometer(&bar);
-        altitude = bar.altitude;
+
+        estimation.updateFromBar(bar.altitude, bar.dt / 1000.0f);
+
         if (DEBUG_BAR || DEBUG_ALL)
         {
             Serial.print("Bar:\t");
@@ -179,28 +185,16 @@ void loop()
     }
 
     // // removing the angular offset
-    accelWithOffset2(0) = accelWithOffset.x;
-    accelWithOffset2(1) = accelWithOffset.y;
-    accelWithOffset2(2) = accelWithOffset.z;
 
-    fixed_accel = R * accelWithOffset2; // body frame accelleration without offset
-    yawMag = estimation.yawFromMag(mag, quat);
+    accBodyFrame = R * Vector3f(accIMUFrame.x, accIMUFrame.y, accIMUFrame.z); // acceleration in drone frame
 
     // // EKF estimation for attitude, speed and position
-    // // estimation.kf_attitudeEstimation(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt);  // quaternion attitude estimation
+    // // estimation.kf_attitudeEstimation(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt);  // quaternion attitude estimation
     getQuaternion(&quat);
     getAttitude(&att);
-    estimation.xt_at << quat.w, quat.x, quat.y, quat.z;
+    estimation.xt_at << quat.w, quat.x, quat.y, quat.z; // just copy quaternion from dmp
     estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
-    estimation.predict(fixed_accel, Vector3f(gyro.x, gyro.y, gyro.z), accelWithOffset.dt / 1000.0f); // prediction of the (x, y, z) position and velocity
-
-    // // compute the update from gps
-    if (isGPSUpdated() && validGPS)
-    {
-        estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
-    }
-    estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
-    estimation.updateFromBar(altitude, bar.dt / 1000.0f);
+    estimation.predict(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt / 1000.0f); // prediction of the (x, y, z) position and velocity
 
     estimation.getPosVel(&pos, &speed);
 
