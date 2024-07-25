@@ -18,5 +18,6 @@ void printData(quat_t *quat);
 void printData(attitude_t *att);
 void printData(gps_t *gps);
 void printData(bar_t *bar);
+void doReboot();
 
 #endif

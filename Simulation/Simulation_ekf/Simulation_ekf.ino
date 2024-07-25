@@ -10,7 +10,7 @@
 #include "radio.h"
 #include "utils.h"
 
-#define DEBUG_ALL 0
+#define DEBUG_ALL 1
 #define DEBUG_GPS 0
 #define DEBUG_MAGYAW 0
 #define DEBUG_ACC 1
@@ -21,7 +21,7 @@
 #define DEBUG_VEL 0
 #define DEBUG_QUAT 0
 #define DEBUG_YPR 0
-#define DEBUG_SERIALCOMMANDS 0
+#define DEBUG_SERIALCOMMANDS 1
 
 
 // variables
@@ -73,9 +73,10 @@ void setup()
         char incomingChar = Serial.read();
 
         // If the byte is 's', start the program
-        if (incomingChar == 's'){
+        if (incomingChar == 's'){ 
             Serial.println("Initialization starting");
             start = true;
+            SCB_AIRCR = 0x05FA0004; //to reboot the Teensy
         }
         else
             Serial.println("Initialization not started, waiting for 's' command");
@@ -125,7 +126,7 @@ void loop()
         if (DEBUG_ACC || DEBUG_ALL)
         {
             Serial.print("Acc:\t");
-            printData(&accIMUFrame);
+            printData(&accIMUFrame); 
         }
     }
 
@@ -187,7 +188,6 @@ void loop()
     // // removing the angular offset
 
     accBodyFrame = R * Vector3f(accIMUFrame.x, accIMUFrame.y, accIMUFrame.z); // acceleration in drone frame
-
     // // EKF estimation for attitude, speed and position
     // // estimation.kf_attitudeEstimation(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt);  // quaternion attitude estimation
     getQuaternion(&quat);
@@ -195,7 +195,6 @@ void loop()
     estimation.xt_at << quat.w, quat.x, quat.y, quat.z; // just copy quaternion from dmp
     estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
     estimation.predict(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt / 1000.0f); // prediction of the (x, y, z) position and velocity
-
     estimation.getPosVel(&pos, &speed);
 
     if (DEBUG_QUAT || DEBUG_ALL)

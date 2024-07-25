@@ -354,7 +354,7 @@ void QuadEstimatorEKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
     zFromX(i) = ekfState(i);
 
   update_ekf(z, hPrime, R_GPS, zFromX, dt);
-}  
+}
 
 void QuadEstimatorEKF::getAttitude(quat_t *quat, attitude_t *att){
   unsigned long currentTime = micros();

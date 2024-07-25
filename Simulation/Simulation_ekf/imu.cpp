@@ -65,8 +65,8 @@ void initializeImu() {
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // Calibration Time: generate offsets and calibrate our MPU6050
-        //mpu.CalibrateAccel(6);
-        //mpu.CalibrateGyro(6);
+        mpu.CalibrateAccel(6);
+        mpu.CalibrateGyro(6);
         Serial.println();
         mpu.PrintActiveOffsets();
         
@@ -127,30 +127,9 @@ void getRawAccel(vec_t *accel) {
     unsigned long currentTime = micros();
     mpu.dmpGetAccel(&aa, fifoBuffer);
 
-    // offset accel lsb data
-    vec_t accelOffset;
-    accelOffset.x = -805.0f;
-    accelOffset.y = -5158.0f;
-    accelOffset.z = 1381.0f;
-
-    vec_t gyroOffset;
-    gyroOffset.x = -20.0f;
-    gyroOffset.y = -13.0f;
-    gyroOffset.z = -75.0f;
-
-    vec_t accelLsbOffset;
-    accelLsbOffset.x = accelOffset.x * 16384.0f / 9.81f;
-    accelLsbOffset.y = accelOffset.y * 16384.0f / 9.81f;
-    accelLsbOffset.z = accelOffset.z * 16384.0f / 9.81f;
-
-    vec_t gyroLsbOffset;
-    gyroLsbOffset.x = gyroOffset.x * 16384.0f / 9.81f;
-    gyroLsbOffset.y = gyroOffset.y * 16384.0f / 9.81f;
-    gyroLsbOffset.z = gyroOffset.z * 16384.0f / 9.81f;
-
-    accel->x = (aa.x - accelLsbOffset.x) / 16384.0f * 9.81f;
-    accel->y = (aa.y - accelLsbOffset.y) / 16384.0f * 9.81f;
-    accel->z = (aa.z - accelLsbOffset.z) / 16384.0f * 9.81f;
+    accel->x = aa.x / 16384.0f * 9.81f;
+    accel->y = aa.y / 16384.0f * 9.81f;
+    accel->z = aa.z / 16384.0f * 9.81f;
     accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
     accel->t = currentTime;
 }

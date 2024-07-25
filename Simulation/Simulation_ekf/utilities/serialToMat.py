@@ -11,7 +11,7 @@ import serial.tools.list_ports
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
-    "-d", "--device", help="device to read from", default="COM6")
+    "-d", "--device", help="device to read from", default="COM5")
 parser.add_argument("-s", "--speed", help="speed in bps",
                     default=115200, type=int)
 args = parser.parse_args()
