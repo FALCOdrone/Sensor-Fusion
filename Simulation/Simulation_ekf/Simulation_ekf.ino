@@ -13,7 +13,7 @@
 #define DEBUG_ALL 1
 #define DEBUG_GPS 0
 #define DEBUG_MAGYAW 0
-#define DEBUG_ACC 1
+#define DEBUG_ACC 0
 #define DEBUG_GYRO 0
 #define DEBUG_MAG 0
 #define DEBUG_BAR 0
@@ -21,7 +21,7 @@
 #define DEBUG_VEL 0
 #define DEBUG_QUAT 0
 #define DEBUG_YPR 0
-#define DEBUG_SERIALCOMMANDS 1
+#define DEBUG_SERIALCOMMANDS 0
 
 
 // variables
@@ -40,6 +40,8 @@ attitude_t att;
 bar_t bar;
 float yawMag;
 float lat0;        // latitude at starting point, used for projection (lat long -> x y)
+float lon0;        
+float alt0;
 float r = 6371000; // earth radius (m)
 
 bool validGPS;
@@ -107,9 +109,12 @@ void setup()
     if (validGPS)
     {
         lat0 = coordGPS.lat;
-        posGPS0.x = r * coordGPS.lat;             // north
+        lon0 = coordGPS.lon;
+        alt0 = coordGPS.alt;
+
+        /*posGPS0.x = r * coordGPS.lat;             // north
         posGPS0.y = r * coordGPS.lon * cos(lat0); // east
-        posGPS0.z = coordGPS.alt;                 // up
+        posGPS0.z = coordGPS.alt;                 // up*/
     }
     Serial.println("Initialization done");
 }
@@ -142,9 +147,14 @@ void loop()
 
     if (validGPS && getGPS(&coordGPS, &speedGPS))
     {
-        posGPS.x = r * coordGPS.lat - posGPS0.x;             // north
+        /*posGPS.x = r * coordGPS.lat - posGPS0.x;             // north
         posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y; // east
         posGPS.z = -coordGPS.alt + posGPS0.z;                // down
+        posGPS.dt = coordGPS.dt; */
+
+        posGPS.x = 111320 * (coordGPS.lat - lat0);                         // north
+        posGPS.y = 111320 * cos(lat0) * (coordGPS.lon - lon0);             // east
+        posGPS.z = coordGPS.alt - alt0;                                    // down*/
         posGPS.dt = coordGPS.dt;
 
        estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
@@ -153,6 +163,10 @@ void loop()
         {
             Serial.print("GPS_Pos:\t");
             printData(&posGPS);
+            /*Serial.print("GPS_LAT:\t");
+            Serial.print(coordGPS.lat, 6);
+            Serial.print("\tGPS_LON:\t");
+            Serial.println(coordGPS.lon, 6);*/
             Serial.print("GPS_Speed:\t");
             printData(&speedGPS);
         }
