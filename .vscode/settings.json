@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.ino": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "random": "cpp",
+        "*.tcc": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp"
+    }
+}

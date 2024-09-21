@@ -1,0 +1,23 @@
+% Load the data
+DataBiasRemoved = load('DataBiasRemoved.mat');
+DataCalib = load('DataCalib1.mat');
+DataWithoutCalib = load('DataWithoutCalib1.mat');
+DataWithSetOffsetAndCalib = load('DataWithSetOffsetAndCalib1.mat');
+DataZeroSetOffsetWithCalib = load('DataZeroSetOffsetWithCalib1.mat');
+DataZeroSetOffsetWithoutCalib = load('DataZeroSetOffsetWithoutCalib1.mat');
+
+% Create a cell array of the structures for easy iteration
+dataStructures = {DataCalib, DataWithoutCalib, DataWithSetOffsetAndCalib, DataZeroSetOffsetWithCalib, DataZeroSetOffsetWithoutCalib};
+dataStructures
+
+for i = 1:length(dataStructures)
+    % Plot Acc
+    figure;
+    plot(dataStructures{i}.data.Acc');
+    title(['Acc for Data Structure ', num2str(i)]);
+    
+    % Plot gyro
+    figure;
+    plot(dataStructures{i}.data.Gyro');
+    title(['gyro for Data Structure ', num2str(i)]);
+end
