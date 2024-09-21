@@ -1,2 +1,2 @@
-# FALCO Drone Project
-Autonomous driving drone built and developed by AEA, the automation engineering association of Politecnico di Milano
+# FALCO Sensor-Fusion
+Sensor fusion developement and testing code, and EKF is used to merge data from 6-axis IMU, magnetometer, barometer and GPS
