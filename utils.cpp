@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void setupBlink(int numBlinks, int upTime, int downTime) {
+void utils::setupBlink(int numBlinks, int upTime, int downTime) {
     // DESCRIPTION: Simple function to make LED on board blink as desired
     for (int j = 1; j <= numBlinks; j++) {
         digitalWrite(13, LOW);
@@ -10,7 +10,7 @@ void setupBlink(int numBlinks, int upTime, int downTime) {
     }
 }
 
-void lpFilter(vec_t *current, vec_t *old, float b) {
+void utils::lpFilter(vec_t *current, vec_t *old, float b) {
     // DESCRIPTION: Simple low pass filter
     // INPUTS:
     //  current: current value
@@ -23,13 +23,13 @@ void lpFilter(vec_t *current, vec_t *old, float b) {
     current->z = b * current->z + (1 - b) * old->z;
 }
 
-void lpFilter(attitude_t *current, attitude_t *old, float b) {
+void utils::lpFilter(attitude_t *current, attitude_t *old, float b) {
     current->roll = b * current->roll + (1 - b) * old->roll;
     current->pitch = b * current->pitch + (1 - b) * old->pitch;
     current->yaw = b * current->yaw + (1 - b) * old->yaw;
 }
 
-void lpFilter(quat_t *current, quat_t *old, float b) {
+void utils::lpFilter(quat_t *current, quat_t *old, float b) {
     current->w = b * current->w + (1 - b) * old->w;
     current->x = b * current->x + (1 - b) * old->x;
     current->y = b * current->y + (1 - b) * old->y;
@@ -37,7 +37,7 @@ void lpFilter(quat_t *current, quat_t *old, float b) {
 }
 
 // Debug functions
-void printData(vec_t *data, const char *unit) {
+void utils::printData(vec_t *data, const char *unit) {
     Serial.print("X: ");
     Serial.print(data->x, 3);
     Serial.print(unit);
@@ -51,7 +51,7 @@ void printData(vec_t *data, const char *unit) {
     Serial.println(data->dt);
 }
 
-void printData(quat_t *quat) {
+void utils::printData(quat_t *quat) {
     Serial.print("W: ");
     Serial.print(quat->w, 3);
     Serial.print("\tX: ");
@@ -64,7 +64,7 @@ void printData(quat_t *quat) {
     Serial.println(quat->dt);
 }
 
-void printData(attitude_t *att) {
+void utils::printData(attitude_t *att) {
     Serial.print("R: ");
     Serial.print(att->roll, 3);
     Serial.print("\tP: ");
@@ -73,7 +73,7 @@ void printData(attitude_t *att) {
     Serial.println(att->yaw, 3);
 }
 
-void printData(bar_t *bar) {
+void utils::printData(bar_t *bar) {
     Serial.print("Alt: ");
     Serial.print(bar->altitude, 3);
     Serial.print("\tPres: ");
@@ -84,7 +84,7 @@ void printData(bar_t *bar) {
     Serial.println(bar->dt, 3);
 }
 
-void logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
+void utils::logIMU(vec_t *pos, vec_t *speed, vec_t *accel) {
     Serial.print(pos->x, 4);
     Serial.print(",");
     Serial.print(pos->y, 4);

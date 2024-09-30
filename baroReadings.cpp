@@ -1,17 +1,5 @@
-#include "baro.h"
+#include "baroReadings.h"
 
-#define MAX_VAR_BARO pow(1.0,2) // meters^2
-
-/*
-TODO:
-- Change environment values for Milan
-*/
-
-// Assumed environmental values:
-float referencePressure = 1018;  // hPa local QFF (official meteor-station reading)
-float outdoorTemp = 20;          // °C  measured local outdoor temp.
-float bar0 = 0;   // meters ... map readings + barometer position
-   
 // Default : forced mode, standby time = 1000 ms
 // Oversampling = pressure ×1, temperature ×1, humidity ×1, filter off, spi off
 BME280I2C::Settings settings(
@@ -26,8 +14,14 @@ BME280I2C::Settings settings(
 
 BME280I2C bme(settings);
 
-bool initializeBarometer() {
+baroReadings::baroReadings(bar_t *bar) {
+    this->data = bar;
+}
+        
+bool baroReadings::initializeBarometer() {
+
     Wire.begin();
+
     while (!bme.begin()) {
         Serial.println("Could not find BME280 sensor!");
         delay(1000);
@@ -53,7 +47,7 @@ bool initializeBarometer() {
     
     while (k < numSamples || var > MAX_VAR_BARO )
     {
-        getBarometer(&bar[k%numSamples]);
+        bar[k%numSamples] = getBarometer();
 
         double dt = micros() - prev;
         Serial.printf("%d, %0.12f: %0.12f\n", k, dt, bar[k%numSamples].altitude);
@@ -86,7 +80,7 @@ bool initializeBarometer() {
     return true;
 }
 
-void getBarometer(bar_t *data) {
+bar_t baroReadings::getBarometer() {
     float temp(NAN), hum(NAN), pres(NAN);
     unsigned long currentTime = micros();
 
@@ -104,4 +98,6 @@ void getBarometer(bar_t *data) {
     data->altitude = altitude - bar0;
     data->dt = (currentTime >= data->t) ? (currentTime - data->t) / 1000.0f : (currentTime + (ULONG_MAX - data->t + 1)) / 1000.0f;
     data->t = currentTime;
+
+    return *data;
 }

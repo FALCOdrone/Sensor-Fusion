@@ -170,20 +170,6 @@ void QuadEstimatorEKF::complimentary_filter_attitude_estimation(Vector3f acc, Ve
   xt_at = Euler1232EP(estAttitude);
 }
 
-Vector3f QuadEstimatorEKF::EulerVelocities_to_BodyRates(Vector3f omega){
-  Matrix3f m;
-  m(0, 0) = 1;
-  m(1, 0) = 0;
-  m(2, 0) = 0;
-  m(0, 1) = sin(rollEst) * tan(pitchEst);
-  m(0, 2) = cos(rollEst) * tan(pitchEst);
-  m(1, 1) = cos(rollEst);
-  m(1, 2) = -sin(rollEst);
-  m(2, 1) = sin(rollEst) / cos(pitchEst);
-  m(2, 2) = cos(rollEst) / cos(pitchEst);
-  return m.inverse()*omega;
-}
-
 Vector3f QuadEstimatorEKF::BodyRates_to_EulerVelocities(Vector3f pqr){
   Matrix3f m;
   m(0, 0) = 1;
@@ -196,22 +182,6 @@ Vector3f QuadEstimatorEKF::BodyRates_to_EulerVelocities(Vector3f pqr){
   m(2, 1) = sin(rollEst) / cos(pitchEst);
   m(2, 2) = cos(rollEst) / cos(pitchEst);
   return m*pqr;
-}
-
-MatrixXf QuadEstimatorEKF::Rot_mat() {  // rotational matrix from body frame to world frame
-  MatrixXf R(3, 3);
-
-  R(0, 0) = cos(estAttitude(1)) * cos(estAttitude(0));
-  R(0, 1) = sin(estAttitude(2)) * sin(estAttitude(1)) * cos(estAttitude(0)) - cos(estAttitude(2)) * sin(estAttitude(0));
-  R(0, 2) = cos(estAttitude(2)) * sin(estAttitude(1)) * cos(estAttitude(0)) + sin(estAttitude(2)) * sin(estAttitude(0));
-  R(1, 0) = cos(estAttitude(1)) * sin(estAttitude(0));
-  R(1, 1) = sin(estAttitude(2)) * sin(estAttitude(1)) * sin(estAttitude(0)) + cos(estAttitude(2)) * cos(estAttitude(0));
-  R(1, 2) = cos(estAttitude(2)) * sin(estAttitude(1)) * sin(estAttitude(0)) - sin(estAttitude(2)) * cos(estAttitude(0));
-  R(2, 0) = -sin(estAttitude(1));
-  R(2, 1) = cos(estAttitude(1)) * sin(estAttitude(2));
-  R(2, 2) = cos(estAttitude(1)) * cos(estAttitude(2));
-
-  return R;
 }
 
 MatrixXf QuadEstimatorEKF::GetRbgPrime() {
