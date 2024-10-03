@@ -1,10 +1,10 @@
 #include "magReadings.h"
 
-magReadings::magReadings(vec_t *magData) {
+Magnetometer::Magnetometer(vec_t *magData) {
     this->magData = magData;
 }
 
-bool magReadings::initializeMag() {
+bool Magnetometer::initialize() {
     if (!magSensor.begin()) {
         Serial.println("Could not find a valid HMC5883 sensor, check wiring!");
         return false;
@@ -12,7 +12,7 @@ bool magReadings::initializeMag() {
     return true;
 }
 
-vec_t magReadings::getMag() {
+vec_t Magnetometer::getMag() {
     sensors_event_t event;
     unsigned long currentTime = micros();
     magSensor.getEvent(&event);

@@ -9,7 +9,7 @@
 #include "pinDef.h"
 #include "types.h"
 
-class IMUReadings {
+class IMU {
 
     private:
 
@@ -27,8 +27,8 @@ class IMUReadings {
 
     public:
 
-        IMUReadings(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel);
-        void initializeImu();
+        IMU(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel);
+        void initialize();
         quat_t getQuaternion();
         attitude_t getAttitude();
         vec_t *getRawAccel();

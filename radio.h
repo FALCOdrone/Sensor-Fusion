@@ -11,7 +11,7 @@
 #include "src/DSMRX/DSMRX.h"
 #endif
 
-class radio {
+class Radio {
 
     private:
         // Failsafe settings

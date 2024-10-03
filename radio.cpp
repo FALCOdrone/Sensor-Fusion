@@ -10,7 +10,7 @@ bool sbusLostFrame;
 DSM1024 DSM;
 #endif
 
-void radio::initializeRadio() {
+void Radio::initializeRadio() {
     // PPM Receiver
 #if defined USE_PPM_RX
     // Declare interrupt pin
@@ -51,7 +51,7 @@ void radio::initializeRadio() {
 
 }
 
-unsigned long radio::getRadioPWM(int ch_num) {
+unsigned long Radio::getRadioPWM(int ch_num) {
     // DESCRIPTION: Get current radio commands from interrupt routines
     unsigned long returnPWM = 0;
 
@@ -72,7 +72,7 @@ unsigned long radio::getRadioPWM(int ch_num) {
     return returnPWM;
 }
 
-void radio::serialEvent3(void) {
+void Radio::serialEvent3(void) {
 #if defined USE_DSM_RX
     while (Serial3.available()) {
         DSM.handleSerialEvent(Serial3.read(), micros());
@@ -177,7 +177,7 @@ void radio::getCh6() {
 }
 #endif
 
-void radio::failSafe(unsigned long radioIn[]) {
+void Radio::failSafe(unsigned long radioIn[]) {
     // DESCRIPTION: If radio gives garbage values, set all commands to default values
     /*
      * Radio connection failsafe used to check if the getCommands() function is returning acceptable pwm values. If any of
@@ -204,7 +204,7 @@ void radio::failSafe(unsigned long radioIn[]) {
     }
 }
 
-void radio::getCommands(unsigned long radioIn[], unsigned long radioInPrev[]) {
+void Radio::getCommands(unsigned long radioIn[], unsigned long radioInPrev[]) {
     // DESCRIPTION: Get raw PWM values for every channel from the radio
     /*
      * Updates radio PWM commands in loop based on current available commands. channel_x_pwm is the raw command used in the rest of

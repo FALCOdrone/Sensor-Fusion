@@ -9,7 +9,7 @@
 
 #endif
 
-class GPSReadings
+class GPS
 {
     private:
     
@@ -27,9 +27,9 @@ class GPSReadings
 
     public:
 
-        GPSReadings(gps_t *coord, vec_t *speed);
+        GPS(gps_t *coord, vec_t *speed);
         void smartDelay(unsigned long ms);
-        bool initializeGPS();
+        bool initialize();
         bool isGPSUpdated();
         bool getGPS(gps_t *gpsCoord, vec_t *speed);
         void feedGPS();

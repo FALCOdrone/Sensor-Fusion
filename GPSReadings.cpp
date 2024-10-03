@@ -3,13 +3,13 @@
 // The TinyGPSPlus object
 TinyGPSPlus gps;
 
-GPSReadings::GPSReadings(gps_t *coord, vec_t *speed) {
+GPS::GPS(gps_t *coord, vec_t *speed) {
     this->coord = coord;
     this->gpsCoord = coord;
     this->speed = speed;
 }
 
-void GPSReadings::smartDelay(unsigned long ms)
+void GPS::smartDelay(unsigned long ms)
 {
     unsigned long start = millis();
     do
@@ -19,7 +19,7 @@ void GPSReadings::smartDelay(unsigned long ms)
     } while (millis() - start < ms);
 }
 
-bool GPSReadings::initializeGPS() {
+bool GPS::initialize() {
     int gpsBaud = 115200;
     coord = NULL;
     // GPS serial init
@@ -124,11 +124,11 @@ bool GPSReadings::initializeGPS() {
     return true;
 }
 
-bool GPSReadings::isGPSUpdated() {
+bool GPS::isGPSUpdated() {
     return gps.location.isUpdated() || gps.speed.isUpdated() || gps.course.isUpdated();
 }
         
-bool GPSReadings::getGPS(gps_t *gpsCoord, vec_t *speed) {
+bool GPS::getGPS(gps_t *gpsCoord, vec_t *speed) {
     bool update_location = gps.location.isUpdated();
 
     if (update_location)
@@ -159,7 +159,7 @@ bool GPSReadings::getGPS(gps_t *gpsCoord, vec_t *speed) {
 }
 
 // To be ran frequently
-void GPSReadings::feedGPS()
+void GPS::feedGPS()
 {
     while (gpsPort.available() > 0)
     {

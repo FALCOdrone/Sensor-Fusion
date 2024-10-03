@@ -14,11 +14,11 @@ BME280I2C::Settings settings(
 
 BME280I2C bme(settings);
 
-baroReadings::baroReadings(bar_t *bar) {
+Barometer::Barometer(bar_t *bar) {
     this->data = bar;
 }
         
-bool baroReadings::initializeBarometer() {
+bool Barometer::initialize() {
 
     Wire.begin();
 
@@ -80,7 +80,7 @@ bool baroReadings::initializeBarometer() {
     return true;
 }
 
-bar_t baroReadings::getBarometer() {
+bar_t Barometer::getBarometer() {
     float temp(NAN), hum(NAN), pres(NAN);
     unsigned long currentTime = micros();
 

@@ -10,7 +10,7 @@
 
 #include "types.h"
 
-class magReadings {
+class Magnetometer {
     
     private:
         Adafruit_HMC5883_Unified magSensor = Adafruit_HMC5883_Unified(12345);
@@ -18,8 +18,8 @@ class magReadings {
 
     public:
     
-        magReadings(vec_t *magData);
-        bool initializeMag();
+        Magnetometer(vec_t *magData);
+        bool initialize();
         vec_t getMag();
 };
 

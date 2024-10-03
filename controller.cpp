@@ -1,6 +1,6 @@
 #include "controller.h"
 
-void controller::controlMixer(float throttleDes, float mCmdScaled[], attitude_t attPID) {
+void Controller::controlMixer(float throttleDes, float mCmdScaled[], attitude_t attPID) {
     // DESCRIPTION: Mixes scaled commands from PID controller to actuator outputs based on vehicle configuration
     /*
      * Takes roll_PID, pitch_PID, and yaw_PID computed from the PID controller and appropriately mixes them for the desired
@@ -24,7 +24,7 @@ void controller::controlMixer(float throttleDes, float mCmdScaled[], attitude_t 
     mCmdScaled[3] = throttleDes + attPID.pitch + attPID.roll - attPID.yaw;  // Back Left
 }
 
-void controller::controlANGLE(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, attitude_t attIMU, PID_t *PID) {
+void Controller::controlANGLE(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, attitude_t attIMU, PID_t *PID) {
     // DESCRIPTION: Computes control commands based on state error (angle)
     /*
      * Basic PID control to stablize on angle setpoint based on desired states roll_des, pitch_des, and yaw_des computed in
@@ -78,7 +78,7 @@ void controller::controlANGLE(unsigned long throttleCmd /*channel_1_pwm */, atti
     PID->iPrev.yaw = PID->i.yaw;
 }
 
-void controller::controlANGLE2(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, attitude_t attIMU, attitude_t *attIMUprev, PID_t *PIDol, PID_t *PIDil) {
+void Controller::controlANGLE2(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, attitude_t attIMU, attitude_t *attIMUprev, PID_t *PIDol, PID_t *PIDil) {
     // DESCRIPTION: Computes control commands based on state error (angle) in cascaded scheme
     /*
      * Gives better performance than controlANGLE() but requires much more tuning. Not reccommended for first-time setup.
@@ -166,7 +166,7 @@ void controller::controlANGLE2(unsigned long throttleCmd /*channel_1_pwm */, att
     PIDil->iPrev.yaw = PIDil->i.yaw;
 }
 
-void controller::controlRATE(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, vec_t *prevGyFro, attitude_t attIMU, PID_t *PID) {
+void Controller::controlRATE(unsigned long throttleCmd /*channel_1_pwm */, attitude_t desiredAtt, vec_t gyro, vec_t *prevGyFro, attitude_t attIMU, PID_t *PID) {
     // DESCRIPTION: Computes control commands based on state error (rate)
     /*
      * See explanation for controlANGLE(). Everything is the same here except the error is now the desired rate - raw gyro reading.

@@ -1,13 +1,13 @@
 #include "IMUReadings.h"
 
-IMUReadings::IMUReadings(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel) {
+IMU::IMU(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel) {
     this->gyro = gyro;
     this->quat = quat;
     this->att = att;
     this->accel = accel;
 }
 
-void IMUReadings::initializeImu() {
+void IMU::initialize() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
         Wire.begin();
@@ -55,7 +55,7 @@ void IMUReadings::initializeImu() {
     }
 }
 
-quat_t IMUReadings::getQuaternion() {
+quat_t IMU::getQuaternion() {
     Quaternion q;  // [w, x, y, z]         quaternion container
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -70,7 +70,7 @@ quat_t IMUReadings::getQuaternion() {
     return *quat;
 }
 
-attitude_t IMUReadings::getAttitude() {
+attitude_t IMU::getAttitude() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorFloat gravity;  // [x, y, z]            gravity vector
     float ypr[3];         // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
@@ -88,7 +88,7 @@ attitude_t IMUReadings::getAttitude() {
     return *att;
 }
 
-vec_t *IMUReadings::getRawAccel() {
+vec_t *IMU::getRawAccel() {
     VectorInt16 aa;  // [x, y, z]            accel sensor measurements
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -103,7 +103,7 @@ vec_t *IMUReadings::getRawAccel() {
     return accel;
 }
 
-vec_t *IMUReadings::getRawGyro() {
+vec_t *IMU::getRawGyro() {
     VectorInt16 gy;  // [x, y, z]            gyro sensor measurements
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -117,7 +117,7 @@ vec_t *IMUReadings::getRawGyro() {
     return gyro;
 }
 
-vec_t *IMUReadings::getRealAccel() {
+vec_t *IMU::getRealAccel() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorInt16 aa;       // [x, y, z]            accel sensor measurements
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
@@ -139,7 +139,7 @@ vec_t *IMUReadings::getRealAccel() {
     return accel;
 }
 
-vec_t *IMUReadings::getWorldAccel() {
+vec_t *IMU::getWorldAccel() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorInt16 aa;       // [x, y, z]            accel sensor measurements
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
@@ -162,14 +162,14 @@ vec_t *IMUReadings::getWorldAccel() {
     return accel;
 }
 
-vec_t IMUReadings::getAcceleration() {
+vec_t IMU::getAcceleration() {
 
     vec_t *accelleration = getRealAccel();
     return *accelleration;
     
 }
 
-vec_t IMUReadings::getGyro() {
+vec_t IMU::getGyro() {
 
     vec_t *angular_vel = getRawGyro();
     return *angular_vel;

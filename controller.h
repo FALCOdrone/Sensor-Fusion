@@ -4,7 +4,7 @@
 #include "types.h"
 #include <Arduino.h>
 
-class controller {
+class Controller {
     private:
 
         // Controller parameters (take note of defaults before modifying!):

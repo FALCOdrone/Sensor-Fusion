@@ -5,7 +5,7 @@
 #include "types.h"
 
 
-class utils {
+class Utils {
 
     public:
         void setupBlink(int numBlinks, int upTime, int downTime);

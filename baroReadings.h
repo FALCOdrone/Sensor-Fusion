@@ -10,7 +10,7 @@
 #include "limits.h"
 #include "types.h"
 
-class baroReadings {
+class Barometer {
 
     private:
 
@@ -23,8 +23,8 @@ class baroReadings {
 
     public:
 
-        baroReadings(bar_t *bar);
-        bool initializeBarometer();
+        Barometer(bar_t *bar);
+        bool initialize();
         bar_t getBarometer();
 
 };

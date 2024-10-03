@@ -59,21 +59,21 @@ unsigned long currentTime, prevTime;
 int GPSrate = 1;
 
 // initialization of the constructor for estimation
-QuadEstimatorEKF estimation;
+EKF estimation;
 
 // initialization of the gps constructor for the gps readings
-GPSReadings gpsReadings(&coordGPS, &speedGPS);
+GPS gpsSensor(&coordGPS, &speedGPS);
 
 // initialization of the mag constructor for the magnetometer readings
-magReadings magReadings(&mag);
+Magnetometer magSensor(&mag);
 
 // initialization of the baro constructor for the barometer readings
-baroReadings baroReadings(&bar);
+Barometer baroSensor(&bar);
 
 // initialization of the imu constructor for the imu readings
-IMUReadings IMUReadings(&gyro, &quat, &att, &accIMUFrame);
+IMU imuSensor(&gyro, &quat, &att, &accIMUFrame);
 
-utils utils;
+Utils utils;
 
 
 void setup()
@@ -97,11 +97,11 @@ void setup()
         else
             Serial.println("Initialization not started, waiting for 's' command");
     }
-    IMUReadings.initializeImu();
-    validGPS = gpsReadings.initializeGPS();
-    validMag = magReadings.initializeMag();
-    validBaro = baroReadings.initializeBarometer();
-    // initializeMotors();
+    imuSensor.initialize();
+    validGPS = gpsSensor.initialize();
+    validMag = magSensor.initialize();
+    validBaro = baroSensor.initialize();
+    // initialize();
     // initializeRadio();
 
     ini_state.setZero();
@@ -141,7 +141,7 @@ void loop()
     // Getting values from imu
     if (micros() - accIMUFrame.t >= 5000)
     { // 200Hz
-        accIMUFrame = IMUReadings.getAcceleration();
+        accIMUFrame = imuSensor.getAcceleration();
         if (DEBUG_ACC || DEBUG_ALL)
         {
             Serial.print("Acc:\t");
@@ -151,7 +151,7 @@ void loop()
 
     if (micros() - gyro.t >= 5000)
     { // 200Hz
-        gyro = IMUReadings.getGyro();
+        gyro = imuSensor.getGyro();
         if (DEBUG_GYRO || DEBUG_ALL)
         {
             Serial.print("Gyro:\t");
@@ -159,7 +159,7 @@ void loop()
         }
     }
 
-    if (validGPS && gpsReadings.getGPS(&coordGPS, &speedGPS))
+    if (validGPS && gpsSensor.getGPS(&coordGPS, &speedGPS))
     {
         /*posGPS.x = r * coordGPS.lat - posGPS0.x;             // north
         posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y; // east
@@ -188,7 +188,7 @@ void loop()
 
     if (validMag && micros() - mag.t > 5000)
     { // 200Hz
-        mag = magReadings.getMag();
+        mag = magSensor.getMag();
 
         yawMag = estimation.yawFromMag(mag, quat);
         estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
@@ -202,7 +202,7 @@ void loop()
 
     if (validBaro && micros() - bar.t > 5000)
     {  // 200Hz
-        bar = baroReadings.getBarometer();
+        bar = baroSensor.getBarometer();
 
         estimation.updateFromBar(bar.altitude, bar.dt / 1000.0f);
 
@@ -218,8 +218,8 @@ void loop()
     accBodyFrame = R * Vector3f(accIMUFrame.x, accIMUFrame.y, accIMUFrame.z); // acceleration in drone frame
     // // EKF estimation for attitude, speed and position
     // // estimation.kf_attitudeEstimation(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt);  // quaternion attitude estimation
-    quat = IMUReadings.getQuaternion();
-    att = IMUReadings.getAttitude();
+    quat = imuSensor.getQuaternion();
+    att = imuSensor.getAttitude();
     estimation.xt_at << quat.w, quat.x, quat.y, quat.z; // just copy quaternion from dmp
     estimation.estAttitude = estimation.EPEuler321(estimation.xt_at);
     estimation.predict(accBodyFrame, Vector3f(gyro.x, gyro.y, gyro.z), accIMUFrame.dt / 1000.0f); // prediction of the (x, y, z) position and velocity
@@ -251,7 +251,7 @@ void loop()
         utils.printData(&speed);
     }
 
-    gpsReadings.feedGPS();
+    gpsSensor.feedGPS();
     loopRate(2000);
 }
 
@@ -271,7 +271,7 @@ void loopRate(int freq)
     // Sit in loop until appropriate time has passed
     while (invFreq > (checker - currentTime))
     {
-        gpsReadings.feedGPS();
+        gpsSensor.feedGPS();
         checker = micros();
     }
 }

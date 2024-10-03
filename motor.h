@@ -4,10 +4,10 @@
 #include <Arduino.h>
 #include "pinDef.h"
 
-class motor {
+class Motor {
 
     public:
-        void initializeMotors();
+        void initialize();
         void driveMotors(float thrust[4]);
         void throttleCut(unsigned long cutOffCmd, float pwm[], bool *armedFly);
 };
