@@ -14,7 +14,7 @@ using Eigen::VectorXf;
 using Eigen::Matrix3f;
 using Eigen::Vector3f;
 
-class QuadEstimatorEKF  {
+class EKF  {
   private:
     float rollEst, pitchEst, yawEst;
     MatrixXf Q;   // external noise matrix

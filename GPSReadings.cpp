@@ -1,15 +1,15 @@
-#include "gps.h"
-
-#define MAX_VAR_DEG_LAT pow((2 / 111320.0),2) //2m variance
-#define MAX_VAR_DEG_LONG pow(2 / (111320.0 * cos(45.4778828 / 180 * PI)),2) // latitiude set in front of building 6
-#define MAX_VAR_ALT 0.2
-
-static const uint32_t GPSBaud = 115200;
+#include "GPSReadings.h"
 
 // The TinyGPSPlus object
 TinyGPSPlus gps;
 
-void smartDelay(unsigned long ms)
+GPS::GPS(gps_t *coord, vec_t *speed) {
+    this->coord = coord;
+    this->gpsCoord = coord;
+    this->speed = speed;
+}
+
+void GPS::smartDelay(unsigned long ms)
 {
     unsigned long start = millis();
     do
@@ -19,8 +19,9 @@ void smartDelay(unsigned long ms)
     } while (millis() - start < ms);
 }
 
-bool initializeGPS(int gpsBaud, gps_t *coord)
-{
+bool GPS::initialize() {
+    int gpsBaud = 115200;
+    coord = NULL;
     // GPS serial init
     // gpsPort.begin(gpsBaud);
     byte gpsBaudConfig[] = {// 115200
@@ -76,6 +77,7 @@ bool initializeGPS(int gpsBaud, gps_t *coord)
 
         while (k < numSamples || var.lat > MAX_VAR_DEG_LAT || var.lon > MAX_VAR_DEG_LONG /*|| var.alt > MAX_VAR_ALT*/)
         {
+
             while (!getGPS(&gpsData[k % numSamples], NULL))
             {
                 feedGPS();
@@ -122,13 +124,11 @@ bool initializeGPS(int gpsBaud, gps_t *coord)
     return true;
 }
 
-bool isGPSUpdated()
-{
+bool GPS::isGPSUpdated() {
     return gps.location.isUpdated() || gps.speed.isUpdated() || gps.course.isUpdated();
 }
-
-bool getGPS(gps_t *gpsCoord, vec_t *speed)
-{
+        
+bool GPS::getGPS(gps_t *gpsCoord, vec_t *speed) {
     bool update_location = gps.location.isUpdated();
 
     if (update_location)
@@ -159,7 +159,7 @@ bool getGPS(gps_t *gpsCoord, vec_t *speed)
 }
 
 // To be ran frequently
-void feedGPS()
+void GPS::feedGPS()
 {
     while (gpsPort.available() > 0)
     {

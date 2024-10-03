@@ -1,24 +1,4 @@
-// Arduino/Teensy Flight Controller - dRehmFlight
-// Author: Nicholas Rehm
-// Project Start: 1/6/2020
-// Last Updated: 7/29/2022
-// Version: Beta 1.3
-
-//========================================================================================================================//
-
-// This file contains all necessary functions and code used for radio communication to avoid cluttering the main code
-
 #include "radio.h"
-
-// Failsafe settings
-unsigned long radioFS[6] = {1000, 1500, 1500, 1500, 2000, 2000};
-unsigned minVal = 800;
-unsigned maxVal = 2200;
-
-unsigned long rising_edge_start_1, rising_edge_start_2, rising_edge_start_3, rising_edge_start_4, rising_edge_start_5, rising_edge_start_6;
-unsigned long channel_1_raw, channel_2_raw, channel_3_raw, channel_4_raw, channel_5_raw, channel_6_raw;
-int ppm_counter = 0;
-unsigned long time_ms = 0;
 
 #if defined USE_SBUS_RX
 SBUS sbus(Serial6);
@@ -30,8 +10,8 @@ bool sbusLostFrame;
 DSM1024 DSM;
 #endif
 
-void initializeRadio() {
-// PPM Receiver
+void Radio::initializeRadio() {
+    // PPM Receiver
 #if defined USE_PPM_RX
     // Declare interrupt pin
     pinMode(PPM_Pin, INPUT_PULLUP);
@@ -68,9 +48,10 @@ void initializeRadio() {
 #else
 #error No RX type defined...
 #endif
+
 }
 
-unsigned long getRadioPWM(int ch_num) {
+unsigned long Radio::getRadioPWM(int ch_num) {
     // DESCRIPTION: Get current radio commands from interrupt routines
     unsigned long returnPWM = 0;
 
@@ -91,8 +72,7 @@ unsigned long getRadioPWM(int ch_num) {
     return returnPWM;
 }
 
-// For DSM type receivers
-void serialEvent3(void) {
+void Radio::serialEvent3(void) {
 #if defined USE_DSM_RX
     while (Serial3.available()) {
         DSM.handleSerialEvent(Serial3.read(), micros());
@@ -100,12 +80,8 @@ void serialEvent3(void) {
 #endif
 }
 
-//========================================================================================================================//
-
-// INTERRUPT SERVICE ROUTINES (for reading PWM and PPM)
-
 #ifdef USE_PPM_RX
-void getPPM() {
+void radio::getPPM() {
     unsigned long dt_ppm;
     int trig = digitalRead(PPM_Pin);
     if (trig == 1) {  // Only care about rising edge
@@ -145,8 +121,8 @@ void getPPM() {
 }
 #endif
 
-#ifdef USE_PWM_RX
-void getCh1() {
+#ifdef USE_PPM_RX
+void radio::getCh1() {
     int trigger = digitalRead(ch1Pin);
     if (trigger == 1) {
         rising_edge_start_1 = micros();
@@ -155,7 +131,7 @@ void getCh1() {
     }
 }
 
-void getCh2() {
+void radio::getCh2() {
     int trigger = digitalRead(ch2Pin);
     if (trigger == 1) {
         rising_edge_start_2 = micros();
@@ -164,7 +140,7 @@ void getCh2() {
     }
 }
 
-void getCh3() {
+void radio::getCh3() {
     int trigger = digitalRead(ch3Pin);
     if (trigger == 1) {
         rising_edge_start_3 = micros();
@@ -173,7 +149,7 @@ void getCh3() {
     }
 }
 
-void getCh4() {
+void radio::getCh4() {
     int trigger = digitalRead(ch4Pin);
     if (trigger == 1) {
         rising_edge_start_4 = micros();
@@ -182,7 +158,7 @@ void getCh4() {
     }
 }
 
-void getCh5() {
+void radio::getCh5() {
     int trigger = digitalRead(ch5Pin);
     if (trigger == 1) {
         rising_edge_start_5 = micros();
@@ -191,7 +167,7 @@ void getCh5() {
     }
 }
 
-void getCh6() {
+void radio::getCh6() {
     int trigger = digitalRead(ch6Pin);
     if (trigger == 1) {
         rising_edge_start_6 = micros();
@@ -201,7 +177,7 @@ void getCh6() {
 }
 #endif
 
-void failSafe(unsigned long radioIn[]) {
+void Radio::failSafe(unsigned long radioIn[]) {
     // DESCRIPTION: If radio gives garbage values, set all commands to default values
     /*
      * Radio connection failsafe used to check if the getCommands() function is returning acceptable pwm values. If any of
@@ -228,7 +204,7 @@ void failSafe(unsigned long radioIn[]) {
     }
 }
 
-void getCommands(unsigned long radioIn[], unsigned long radioInPrev[]) {
+void Radio::getCommands(unsigned long radioIn[], unsigned long radioInPrev[]) {
     // DESCRIPTION: Get raw PWM values for every channel from the radio
     /*
      * Updates radio PWM commands in loop based on current available commands. channel_x_pwm is the raw command used in the rest of

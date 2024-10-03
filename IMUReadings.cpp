@@ -1,41 +1,20 @@
-#include "imu.h"
+#include "IMUReadings.h"
 
-#define GYRO_MAX_VAR 1
-#define ACC_MAX_VAR 1
+IMU::IMU(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel) {
+    this->gyro = gyro;
+    this->quat = quat;
+    this->att = att;
+    this->accel = accel;
+}
 
-#ifdef UDOO
-MPU6500 mpu;  // UDOO KEY
-#else
-MPU6050 mpu;
-#endif
-
-// Filter parameters - Defaults tuned for 2kHz loop rate; Do not touch unless you know what you are doing:
-/*
-float B_madgwick = 0.04;  // Madgwick filter parameter
-float B_accel = 0.14;     // Accelerometer LP filter paramter, (MPU6050 default: 0.14. MPU9250 default: 0.2)
-float B_gyro = 0.1;       // Gyro LP filter paramter, (MPU6050 default: 0.1. MPU9250 default: 0.17)
-#ifdef HAS_MAG
-float B_mag = 1.0;  // Magnetometer LP filter parameter
-#endif
-*/
-
-// MPU control/status vars
-bool dmpReady = false;   // set true if DMP init was successful
-uint8_t mpuIntStatus;    // holds actual interrupt status byte from MPU
-uint8_t devStatus;       // return status after each device operation (0 = success, !0 = error)
-uint16_t packetSize;     // expected DMP packet size (default is 42 bytes)
-uint16_t fifoCount;      // count of all bytes currently in FIFO
-uint8_t fifoBuffer[64];  // FIFO storage buffer
-
-// WARNING: run this strictly when the drone is on a flat surface and not moving
-void initializeImu() {
-// join I2C bus (I2Cdev library doesn't do this automatically)
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    Wire.begin();
-    Wire.setClock(400000);  // 400kHz I2C clock. Comment this line if having compilation difficulties
-#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-    Fastwire::setup(400, true);
-#endif
+void IMU::initialize() {
+    // join I2C bus (I2Cdev library doesn't do this automatically)
+    #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+        Wire.begin();
+        Wire.setClock(400000);  // 400kHz I2C clock. Comment this line if having compilation difficulties
+    #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+        Fastwire::setup(400, true);
+    #endif
 
     Serial.println(F("Initializing I2C devices..."));
     mpu.initialize();
@@ -46,21 +25,6 @@ void initializeImu() {
 
     Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
-    
-    // TODO: get offset from IMU_Zero example file
-    /*mpu.setXGyroOffset(-20);
-    mpu.setYGyroOffset(-13);
-    mpu.setZGyroOffset(-75);
-    mpu.setXAccelOffset(-805);
-    mpu.setYAccelOffset(-5158);
-    mpu.setZAccelOffset(1381);*/
-
-    /*mpu.setXGyroOffset(0);
-    mpu.setYGyroOffset(0);
-    mpu.setZGyroOffset(0);
-    mpu.setXAccelOffset(0);
-    mpu.setYAccelOffset(0);
-    mpu.setZAccelOffset(0);*/
 
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
@@ -69,7 +33,7 @@ void initializeImu() {
         mpu.CalibrateGyro(6);
         Serial.println();
         mpu.PrintActiveOffsets();
-        
+
         // turn on the DMP, now that it's ready
         Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
@@ -91,7 +55,7 @@ void initializeImu() {
     }
 }
 
-void getQuaternion(quat_t *quat) {
+quat_t IMU::getQuaternion() {
     Quaternion q;  // [w, x, y, z]         quaternion container
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -102,10 +66,11 @@ void getQuaternion(quat_t *quat) {
     quat->z = q.z;
     quat->dt = (currentTime >= quat->t) ? (currentTime - quat->t) / 1000.0f : (currentTime + (ULONG_MAX - quat->t + 1)) / 1000.0f;
     quat->t = currentTime;
+
+    return *quat;
 }
 
-// Euler angles in radians
-void getAttitude(attitude_t *att) {
+attitude_t IMU::getAttitude() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorFloat gravity;  // [x, y, z]            gravity vector
     float ypr[3];         // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
@@ -119,9 +84,11 @@ void getAttitude(attitude_t *att) {
     att->roll = ypr[2];
     att->dt = (currentTime >= att->t) ? (currentTime - att->t) / 1000.0f : (currentTime + (ULONG_MAX - att->t + 1)) / 1000.0f;
     att->t = currentTime;
+
+    return *att;
 }
 
-void getRawAccel(vec_t *accel) {
+vec_t *IMU::getRawAccel() {
     VectorInt16 aa;  // [x, y, z]            accel sensor measurements
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -132,9 +99,11 @@ void getRawAccel(vec_t *accel) {
     accel->z = aa.z / 16384.0f * 9.81f;
     accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
     accel->t = currentTime;
+
+    return accel;
 }
 
-void getRawGyro(vec_t *gyro) {
+vec_t *IMU::getRawGyro() {
     VectorInt16 gy;  // [x, y, z]            gyro sensor measurements
     mpu.dmpGetCurrentFIFOPacket(fifoBuffer);
     unsigned long currentTime = micros();
@@ -144,10 +113,11 @@ void getRawGyro(vec_t *gyro) {
     gyro->z = gy.z / 131.0f * PI / 180.0f;
     gyro->dt = (currentTime >= gyro->t) ? (currentTime - gyro->t) / 1000.0f : (currentTime + (ULONG_MAX - gyro->t + 1)) / 1000.0f;
     gyro->t = currentTime;
+
+    return gyro;
 }
 
-// real acceleration, adjusted to remove gravity
-void getRealAccel(vec_t *accel) {
+vec_t *IMU::getRealAccel() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorInt16 aa;       // [x, y, z]            accel sensor measurements
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
@@ -165,11 +135,11 @@ void getRealAccel(vec_t *accel) {
     accel->z = aaReal.z / 16384.0f * 9.81f;
     accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
     accel->t = currentTime;
+
+    return accel;
 }
 
-// world-frame acceleration, adjusted to remove gravity
-// and rotated based on known orientation from quaternion
-void getWorldAccel(vec_t *accel) {
+vec_t *IMU::getWorldAccel() {
     Quaternion q;         // [w, x, y, z]         quaternion container
     VectorInt16 aa;       // [x, y, z]            accel sensor measurements
     VectorInt16 aaReal;   // [x, y, z]            gravity-free accel sensor measurements
@@ -188,13 +158,28 @@ void getWorldAccel(vec_t *accel) {
     accel->z = aaWorld.z / 16384.0f * 9.81f;
     accel->dt = (currentTime >= accel->t) ? (currentTime - accel->t) / 1000.0f : (currentTime + (ULONG_MAX - accel->t + 1)) / 1000.0f;
     accel->t = currentTime;
+
+    return accel;
 }
 
-// Compatibility with old code
-void getAcceleration(vec_t *accel) {
-    getRealAccel(accel);
+vec_t IMU::getAcceleration() {
+
+    vec_t *accelleration = getRealAccel();
+    return *accelleration;
+    
 }
 
-void getGyro(vec_t *gyro) {
-    getRawGyro(gyro);
+vec_t IMU::getGyro() {
+
+    vec_t *angular_vel = getRawGyro();
+    return *angular_vel;
+
 }
+
+// void printIMUData(vec_t *data, const char *unit);
+// void printIMUData(vec_t *data);
+// void printIMUData(bar_t *data);
+// void printIMUData(quat_t *quat);
+// void printIMUData(attitude_t *att);
+
+// void logIMU(vec_t *pos, vec_t *speed, vec_t *accel);

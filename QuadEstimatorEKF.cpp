@@ -1,7 +1,7 @@
 #include "QuadEstimatorEKF.h"
 
 
-void QuadEstimatorEKF::initialize(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf
+void EKF::initialize(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf
 
   ekfCov.setIdentity(Nstate, Nstate);
 
@@ -49,7 +49,7 @@ void QuadEstimatorEKF::initialize(VectorXf ini_state, VectorXf ini_stdDevs) {   
   ekfState = ini_state;
 }
 
-VectorXf QuadEstimatorEKF::Euler1232EP(Vector3f p) {  // from euler angle to quaternion in XYZ    
+VectorXf EKF::Euler1232EP(Vector3f p) {  // from euler angle to quaternion in XYZ    
   VectorXf q(4);
   float c1 = cosf(p(0) / 2);
   float s1 = sinf(p(0) / 2);
@@ -67,7 +67,7 @@ VectorXf QuadEstimatorEKF::Euler1232EP(Vector3f p) {  // from euler angle to qua
 }
 
 
-VectorXf QuadEstimatorEKF::Euler3212EP(Vector3f p) {  // from euler angle to quaternion in ZYX    
+VectorXf EKF::Euler3212EP(Vector3f p) {  // from euler angle to quaternion in ZYX    
   VectorXf q(4);
   float c1 = cosf(p(0) / 2);
   float s1 = sinf(p(0) / 2);
@@ -84,7 +84,7 @@ VectorXf QuadEstimatorEKF::Euler3212EP(Vector3f p) {  // from euler angle to qua
   return q;
 }
 
-Vector3f QuadEstimatorEKF::EPEuler123(VectorXf q) {  // from quaternions to euler angles in XYZ
+Vector3f EKF::EPEuler123(VectorXf q) {  // from quaternions to euler angles in XYZ
   float q0 = q(0);
   float q1 = q(1);
   float q2 = q(2);
@@ -97,7 +97,7 @@ Vector3f QuadEstimatorEKF::EPEuler123(VectorXf q) {  // from quaternions to eule
   return Vector3f(yaw, pitch, roll);
 }
 
-Vector3f QuadEstimatorEKF::EPEuler321(VectorXf q) {  // quaternions to euler in ZYX
+Vector3f EKF::EPEuler321(VectorXf q) {  // quaternions to euler in ZYX
   float q0 = q(0);
   float q1 = q(1);
   float q2 = q(2);
@@ -110,7 +110,7 @@ Vector3f QuadEstimatorEKF::EPEuler321(VectorXf q) {  // quaternions to euler in 
   return Vector3f(yaw, pitch, roll);
 }
 
-void QuadEstimatorEKF::kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float dt) {
+void EKF::kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float dt) {
   MatrixXf A(4, 4);
   MatrixXf B(4, 4);
   VectorXf z(4);      
@@ -149,7 +149,7 @@ void QuadEstimatorEKF::kf_attitudeEstimation(Vector3f acc, Vector3f gyro, float 
   ekfState(6) = estAttitude(0);      
 }
 
-void QuadEstimatorEKF::complimentary_filter_attitude_estimation(Vector3f acc, Vector3f gyro, float dt){
+void EKF::complimentary_filter_attitude_estimation(Vector3f acc, Vector3f gyro, float dt){
   Vector3f dq = BodyRates_to_EulerVelocities(Vector3f(gyro(2), gyro(1), gyro(0)));
 
   float predictedRoll = rollEst + dt * dq(0);
@@ -170,21 +170,7 @@ void QuadEstimatorEKF::complimentary_filter_attitude_estimation(Vector3f acc, Ve
   xt_at = Euler1232EP(estAttitude);
 }
 
-Vector3f QuadEstimatorEKF::EulerVelocities_to_BodyRates(Vector3f omega){
-  Matrix3f m;
-  m(0, 0) = 1;
-  m(1, 0) = 0;
-  m(2, 0) = 0;
-  m(0, 1) = sin(rollEst) * tan(pitchEst);
-  m(0, 2) = cos(rollEst) * tan(pitchEst);
-  m(1, 1) = cos(rollEst);
-  m(1, 2) = -sin(rollEst);
-  m(2, 1) = sin(rollEst) / cos(pitchEst);
-  m(2, 2) = cos(rollEst) / cos(pitchEst);
-  return m.inverse()*omega;
-}
-
-Vector3f QuadEstimatorEKF::BodyRates_to_EulerVelocities(Vector3f pqr){
+Vector3f EKF::BodyRates_to_EulerVelocities(Vector3f pqr){
   Matrix3f m;
   m(0, 0) = 1;
   m(1, 0) = 0;
@@ -198,23 +184,7 @@ Vector3f QuadEstimatorEKF::BodyRates_to_EulerVelocities(Vector3f pqr){
   return m*pqr;
 }
 
-MatrixXf QuadEstimatorEKF::Rot_mat() {  // rotational matrix from body frame to world frame
-  MatrixXf R(3, 3);
-
-  R(0, 0) = cos(estAttitude(1)) * cos(estAttitude(0));
-  R(0, 1) = sin(estAttitude(2)) * sin(estAttitude(1)) * cos(estAttitude(0)) - cos(estAttitude(2)) * sin(estAttitude(0));
-  R(0, 2) = cos(estAttitude(2)) * sin(estAttitude(1)) * cos(estAttitude(0)) + sin(estAttitude(2)) * sin(estAttitude(0));
-  R(1, 0) = cos(estAttitude(1)) * sin(estAttitude(0));
-  R(1, 1) = sin(estAttitude(2)) * sin(estAttitude(1)) * sin(estAttitude(0)) + cos(estAttitude(2)) * cos(estAttitude(0));
-  R(1, 2) = cos(estAttitude(2)) * sin(estAttitude(1)) * sin(estAttitude(0)) - sin(estAttitude(2)) * cos(estAttitude(0));
-  R(2, 0) = -sin(estAttitude(1));
-  R(2, 1) = cos(estAttitude(1)) * sin(estAttitude(2));
-  R(2, 2) = cos(estAttitude(1)) * cos(estAttitude(2));
-
-  return R;
-}
-
-MatrixXf QuadEstimatorEKF::GetRbgPrime() {
+MatrixXf EKF::GetRbgPrime() {
     MatrixXf RbgPrime(3, 3);
     RbgPrime.setZero();
   
@@ -228,7 +198,7 @@ MatrixXf QuadEstimatorEKF::GetRbgPrime() {
     return RbgPrime;
 }
 
-Matrix3f QuadEstimatorEKF::quatRotMat(VectorXf q) {
+Matrix3f EKF::quatRotMat(VectorXf q) {
   Matrix3f M;
 
   M << 1 - 2*q(2)*q(2) - 2*q(3)*q(3), 2*q(1)*q(2) - 2*q(0)*q(3), 2*q(1)*q(3) + 2*q(0)*q(2),
@@ -237,7 +207,7 @@ Matrix3f QuadEstimatorEKF::quatRotMat(VectorXf q) {
   return M;
 }
 
-Matrix3f QuadEstimatorEKF::quatRotMat_2(VectorXf q){
+Matrix3f EKF::quatRotMat_2(VectorXf q){
   Matrix3f m;
   q = q/q.norm();
   Vector3f q_v = q.head(3);
@@ -253,7 +223,7 @@ Matrix3f QuadEstimatorEKF::quatRotMat_2(VectorXf q){
   return m;
 }
 
-void QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
+void EKF::predict(Vector3f acc, Vector3f gyro, float dt){
 
     VectorXf predictedState = ekfState;
     Vector3f inertial_accel;
@@ -290,7 +260,7 @@ void QuadEstimatorEKF::predict(Vector3f acc, Vector3f gyro, float dt){
     ekfState = predictedState;
 }
 
-void QuadEstimatorEKF::update_ekf(VectorXf z, MatrixXf H, MatrixXf R, VectorXf zFromX, float dt) {
+void EKF::update_ekf(VectorXf z, MatrixXf H, MatrixXf R, VectorXf zFromX, float dt) {
     assert(z.size() == H.rows());
     assert(Nstate == H.cols());
     assert(z.size() == R.rows());
@@ -309,7 +279,7 @@ void QuadEstimatorEKF::update_ekf(VectorXf z, MatrixXf H, MatrixXf R, VectorXf z
     ekfCov = (eye - K*H)*ekfCov;
 }
 
-void QuadEstimatorEKF::updateFromMag(float magYaw, float dt) {  
+void EKF::updateFromMag(float magYaw, float dt) {  
   VectorXf z(1), zFromX(1);
   z(0) = magYaw;  // measure done by the mag, magYaw taken by the magnatometer
   zFromX(0) = ekfState(6);
@@ -330,7 +300,7 @@ void QuadEstimatorEKF::updateFromMag(float magYaw, float dt) {
   xt_at = Euler3212EP(estAttitude);
 }
 
-void QuadEstimatorEKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
+void EKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
 
   VectorXf z(6), zFromX(6);
   z(0) = pos.x();
@@ -356,7 +326,7 @@ void QuadEstimatorEKF::updateFromGps(Vector3f pos, Vector3f vel, float dt) {
   update_ekf(z, hPrime, R_GPS, zFromX, dt);
 }
 
-void QuadEstimatorEKF::getAttitude(quat_t *quat, attitude_t *att){
+void EKF::getAttitude(quat_t *quat, attitude_t *att){
   unsigned long currentTime = micros();
   
   quat->w = xt_at(0);
@@ -374,7 +344,7 @@ void QuadEstimatorEKF::getAttitude(quat_t *quat, attitude_t *att){
 
 }
 
-void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
+void EKF::getPosVel(vec_t *pos, vec_t *vel){
   unsigned long currentTime = micros();
   
   pos->x = ekfState(0);
@@ -389,7 +359,7 @@ void QuadEstimatorEKF::getPosVel(vec_t *pos, vec_t *vel){
 
 }
 
-float QuadEstimatorEKF::yawFromMag(vec_t mag, quat_t quat) {
+float EKF::yawFromMag(vec_t mag, quat_t quat) {
 
   VectorXf quat_readings(4);
   quat_readings(0) = quat.w;
@@ -415,7 +385,7 @@ float QuadEstimatorEKF::zFromBar(float P) {
   return altitude_from_bar;
 }
 */
-void QuadEstimatorEKF::updateFromBar(float altitude, float dt) {
+void EKF::updateFromBar(float altitude, float dt) {
    VectorXf z(1), zFromX(1);
    z(0) = altitude;
    zFromX(0) = ekfState(2);

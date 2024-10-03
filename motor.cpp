@@ -1,14 +1,13 @@
 #include "motor.h"
 
-// TODO: update with real transfer function between thrust and PWM
-void initializeMotors() {
+void Motor::initialize() {
     pinMode(ESC1, OUTPUT);
     pinMode(ESC2, OUTPUT);
     pinMode(ESC3, OUTPUT);
     pinMode(ESC4, OUTPUT);
 }
 
-void driveMotors(float thrust[]) {
+void Motor::driveMotors(float thrust[]) {
     // Motor 1
     analogWrite(ESC1, map(thrust[0], 0, 1, 0, 255));
     // Motor 2
@@ -19,7 +18,7 @@ void driveMotors(float thrust[]) {
     analogWrite(ESC4, map(thrust[3], 0, 1, 0, 255));
 }
 
-void throttleCut(unsigned long cutOffCmd, float pwm[], bool *armedFly) {
+void Motor::throttleCut(unsigned long cutOffCmd, float pwm[], bool *armedFly) {
     // DESCRIPTION: Directly set actuator outputs to minimum value if triggered
     /*
         Monitors the state of radio command channel_5_pwm and directly sets the mx_command_PWM values to minimum (120 is

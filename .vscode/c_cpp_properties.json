@@ -12,7 +12,7 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "C:\\Users\\gbeve\\Downloads\\Sensor-Fusion\\build\\pch",
+                "K:\\Sensor-Fusion\\build\\pch",
                 "C:\\Users\\gbeve\\AppData\\Local\\Arduino15\\packages\\teensy\\hardware\\avr\\1.59.0\\cores\\teensy4",
                 "C:\\Users\\gbeve\\OneDrive - Politecnico di Milano\\Documenti\\Arduino\\libraries\\Eigen",
                 "C:\\Users\\gbeve\\OneDrive - Politecnico di Milano\\Documenti\\Arduino\\libraries\\ArxTypeTraits",
@@ -32,7 +32,7 @@
                 "c:\\users\\gbeve\\appdata\\local\\arduino15\\packages\\teensy\\tools\\teensy-compile\\11.3.1\\arm\\arm-none-eabi\\include"
             ],
             "forcedInclude": [
-                "C:\\Users\\gbeve\\Downloads\\Sensor-Fusion\\build\\pch\\Arduino.h"
+                "K:\\Sensor-Fusion\\build\\pch\\Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++17",
