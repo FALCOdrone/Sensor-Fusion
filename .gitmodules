@@ -1,0 +1,3 @@
+[submodule "Control"]
+	path = Control
+	url = https://github.com/FALCOdrone/Control
