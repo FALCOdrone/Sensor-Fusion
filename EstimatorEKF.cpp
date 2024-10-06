@@ -1,4 +1,4 @@
-#include "QuadEstimatorEKF.h"
+#include "EstimatorEKF.h"
 
 
 void EKF::initialize(VectorXf ini_state, VectorXf ini_stdDevs) {   // for ekf

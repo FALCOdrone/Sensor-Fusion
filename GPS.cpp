@@ -1,4 +1,4 @@
-#include "GPSReadings.h"
+#include "GPS.h"
 
 // The TinyGPSPlus object
 TinyGPSPlus gps;

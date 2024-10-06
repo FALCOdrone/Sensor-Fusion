@@ -1,4 +1,4 @@
-#include "magReadings.h"
+#include "mag.h"
 
 Magnetometer::Magnetometer(vec_t *magData) {
     this->magData = magData;

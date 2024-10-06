@@ -1,10 +1,10 @@
 #include <Arduino.h>
 
-#include "QuadEstimatorEKF.h"
-#include "baroReadings.h"
-#include "gpsReadings.h"
-#include "imuReadings.h"
-#include "magReadings.h"
+#include "..\EstimatorEKF.h"
+#include "..\baro.h"
+#include "..\GPS.h"
+#include "..\IMU.h"
+#include "..\mag.h"
 #include "motor.h"
 #include "pinDef.h"
 #include "radio.h"

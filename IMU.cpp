@@ -1,4 +1,4 @@
-#include "IMUReadings.h"
+#include "IMU.h"
 
 IMU::IMU(vec_t *gyro, quat_t *quat, attitude_t *att, vec_t *accel) {
     this->gyro = gyro;
