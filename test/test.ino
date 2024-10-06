@@ -5,10 +5,10 @@
 #include "..\GPS.h"
 #include "..\IMU.h"
 #include "..\mag.h"
-#include "motor.h"
-#include "pinDef.h"
-#include "radio.h"
-#include "utils.h"
+#include "..\control\motor.h"
+#include "..\control\radio.h"
+#include "..\common\pinDef.h"
+#include "..\common\utils.h"
 
 #define DEBUG_ALL 1
 #define DEBUG_GPS 0

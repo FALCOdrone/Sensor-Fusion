@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include <TinyGPSPlus.h>
 
-#include "types.h"
-#include "pinDef.h"
+#include "common\types.h"
+#include "common\pinDef.h"
 
 #endif
 

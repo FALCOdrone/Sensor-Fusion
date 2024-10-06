@@ -8,7 +8,7 @@
 
 #include "limits.h"
 
-#include "types.h"
+#include "common\types.h"
 
 class Magnetometer {
     

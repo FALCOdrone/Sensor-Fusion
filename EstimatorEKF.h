@@ -4,7 +4,7 @@
 //#include "Eigen/Dense"
 //#include "Eigen/Sparse"
 #include <ArduinoEigen.h>  // Eigen by hideakitai
-#include "types.h"
+#include "common\types.h"
 #include <Arduino.h>
 //#define PI 3.14
 

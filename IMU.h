@@ -6,8 +6,8 @@
 #include "Wire.h"
 
 #include "limits.h"
-#include "pinDef.h"
-#include "types.h"
+#include "common\pinDef.h"
+#include "common\types.h"
 
 class IMU {
 
