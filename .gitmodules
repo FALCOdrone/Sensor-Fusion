@@ -1,6 +1,6 @@
-[submodule "Control"]
+[submodule "control"]
 	path = control
 	url = https://github.com/FALCOdrone/Control
-[submodule "Common"]
+[submodule "common"]
 	path = common
 	url = https://github.com/FALCOdrone/Common-Utils.git
