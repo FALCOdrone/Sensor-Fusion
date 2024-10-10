@@ -20,12 +20,14 @@ class Barometer {
         float outdoorTemp = 20;          // °C  measured local outdoor temp.
         float bar0 = 0;   // meters ... map readings + barometer position
         bar_t *data;
+        int count = 0;
 
     public:
 
         Barometer(bar_t *bar);
         bool initialize();
         bar_t getBarometer();
+        void getPairData(bar_t pairBarData[2]);
 
 };
 

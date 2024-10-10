@@ -35,9 +35,12 @@ vec_t speedGPS;
 vec_t mag;
 vec_t pos;
 vec_t speed;
+vec_t MaxGpsValue; // max tollerance values of the GPS, needs to be set
+vec_t MaxMagValue; // max tollerance values of the magnetometer, needs to be set
 quat_t quat;
 attitude_t att;
 bar_t bar;
+bar_t MaxBarValue; // max tollerance values of the barometer, needs to be set
 float yawMag;
 float lat0;        // latitude at starting point, used for projection (lat long -> x y)
 float lon0;        
@@ -166,13 +169,20 @@ void loop()
         posGPS.y = r * coordGPS.lon * cos(lat0) - posGPS0.y; // east
         posGPS.z = -coordGPS.alt + posGPS0.z;                // down
         posGPS.dt = coordGPS.dt; */
+        vec_t pairGpsData[2];
 
-        posGPS.x = 111320 * (coordGPS.lat - lat0);                         // north
-        posGPS.y = 111320 * cos(lat0) * (coordGPS.lon - lon0);             // east
-        posGPS.z = coordGPS.alt - alt0;                                    // down*/
-        posGPS.dt = coordGPS.dt;
+        posGPS = gpsSensor.getPos(lat0, lon0, alt0);
+        gpsSensor.getPairData(pairGpsData, lon0,  lat0, alt0); 
+        
+        float deltaX = pairGpsData[1].x - pairGpsData[0].x;
+        float deltaY = pairGpsData[1].y - pairGpsData[0].y;
+        float deltaZ = pairGpsData[1].z - pairGpsData[0].z;
 
-       estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
+        if (deltaX < MaxGpsValue.x && deltaY < MaxGpsValue.y && deltaZ < MaxGpsValue.z) {
+            estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
+        }
+
+       //estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
 
         if (DEBUG_GPS || DEBUG_ALL)
         {
@@ -191,8 +201,19 @@ void loop()
     { // 200Hz
         mag = magSensor.getMag();
 
-        yawMag = estimation.yawFromMag(mag, quat);
-        estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
+        vec_t pairMagData[2];
+        magSensor.getPairData(pairMagData, mag);
+        float deltaMagX = pairMagData[1].x - pairMagData[0].x;
+        float deltaMagY = pairMagData[1].y - pairMagData[0].y;
+        float deltaMagZ = pairMagData[1].z - pairMagData[0].z;
+
+        if (deltaMagX < MaxMagValue.x && deltaMagY < MaxMagValue.y && deltaMagZ < MaxMagValue.z) {
+            yawMag = estimation.yawFromMag(mag, quat);
+            estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
+        }
+
+        //yawMag = estimation.yawFromMag(mag, quat);
+        //estimation.updateFromMag(yawMag, mag.dt / 1000.0f);
 
         if (DEBUG_MAG || DEBUG_ALL)
         {
@@ -204,8 +225,17 @@ void loop()
     if (validBaro && micros() - bar.t > 5000)
     {  // 200Hz
         bar = baroSensor.getBarometer();
+        bar_t pairBarData[2];
 
-        estimation.updateFromBar(bar.altitude, bar.dt / 1000.0f);
+        baroSensor.getPairData(pairBarData, bar);
+
+        float deltaAlt = pairBarData[1].altitude - pairBarData[0].altitude;
+        
+        if (deltaAlt < MaxBarValue.altitude) {
+            estimation.updateFromBar(bar.altitude, bar.dt / 1000.0f);
+        }
+
+        //estimation.updateFromBar(bar.altitude, bar.dt / 1000.0f);
 
         if (DEBUG_BAR || DEBUG_ALL)
         {

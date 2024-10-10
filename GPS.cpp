@@ -5,7 +5,6 @@ TinyGPSPlus gps;
 
 GPS::GPS(gps_t *coord, vec_t *speed) {
     this->coord = coord;
-    this->gpsCoord = coord;
     this->speed = speed;
 }
 
@@ -164,5 +163,28 @@ void GPS::feedGPS()
     while (gpsPort.available() > 0)
     {
         gps.encode(gpsPort.read());
+    }
+}
+
+vec_t GPS::getPos(float lat0, float lon0, float alt0) {
+    vec_t posGPS;
+
+    if (gps.location.isUpdated())
+    {
+        posGPS.x = 111320 * (coordGPS.lat - lat0);                         // north
+        posGPS.y = 111320 * cos(lat0) * (coordGPS.lon - lon0);             // east
+        posGPS.z = coordGPS.alt - alt0;                                    // down*/
+        posGPS.dt = coordGPS.dt;
+    }
+    return pos;
+}
+
+void GPS::getPairData(vec_t pairData[2], float lon0, float lat0, float alt0) {  // function which gets the current gps value and the previous one
+
+    if (gps.location.isUpdated() && countGps < 2) {
+        pairData[countGps] = getPos(lat0, lon0, alt0);
+        countGps++;
+    } else {
+        countGps = 0;
     }
 }

@@ -101,3 +101,12 @@ bar_t Barometer::getBarometer() {
 
     return *data;
 }
+
+void Barometer::getPairData(bar_t pairBarData[2], bar_t bar) {
+    if (initialize() && micros() - bar.t > 5000 && count < 2) {
+        pairBarData[count] = getBarometer();
+        count++;
+    } else {
+        count = 0;
+    }
+}

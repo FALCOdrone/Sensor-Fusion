@@ -25,3 +25,11 @@ vec_t Magnetometer::getMag() {
     return *magData;
 }
 
+void Magnetometer::getPairData(vec_t pairMagData[2], vec_t mag) {
+    if (micros() - mag.t > 5000 && count < 2) {
+        pairMagData[count] = getMag();
+        count++;
+    } else {
+        count = 0;
+    }
+}

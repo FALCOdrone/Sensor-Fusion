@@ -24,6 +24,7 @@ class GPS
         gps_t *coord;
         gps_t *gpsCoord;
         vec_t *speed;
+        int countGps = 0;
 
     public:
 
@@ -33,5 +34,7 @@ class GPS
         bool isGPSUpdated();
         bool getGPS(gps_t *gpsCoord, vec_t *speed);
         void feedGPS();
+        vec_t getPos(float lat0, float lon0, float alt0);
+        vec_t getPairData(vec_t pairData[2], float lon0, float lat0, float alt0);
 
 };
