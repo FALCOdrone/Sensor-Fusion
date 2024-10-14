@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
-#include "..\EstimatorEKF.h"
-#include "..\baro.h"
-#include "..\GPS.h"
-#include "..\IMU.h"
-#include "..\mag.h"
-#include "..\common\pinDef.h"
-#include "..\common\utils.h"
+#include "EstimatorEKF.h"
+#include "baro.h"
+#include "GPS.h"
+#include "IMU.h"
+#include "mag.h"
+#include "common\pinDef.h"
+#include "common\utils.h"
 
 #include "control\motor.h"
 #include "control\radio.h"
