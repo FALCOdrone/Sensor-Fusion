@@ -15,7 +15,6 @@ class Magnetometer {
     private:
         Adafruit_HMC5883_Unified magSensor = Adafruit_HMC5883_Unified(12345);
         vec_t *magData;
-        int count = 0;
 
     public:
     

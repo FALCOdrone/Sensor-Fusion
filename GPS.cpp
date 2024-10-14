@@ -169,22 +169,19 @@ void GPS::feedGPS()
 vec_t GPS::getPos(float lat0, float lon0, float alt0) {
     vec_t posGPS;
 
-    if (gps.location.isUpdated())
+    if (getGPS(gpsCoord, speed))
     {
-        posGPS.x = 111320 * (coordGPS.lat - lat0);                         // north
-        posGPS.y = 111320 * cos(lat0) * (coordGPS.lon - lon0);             // east
-        posGPS.z = coordGPS.alt - alt0;                                    // down*/
-        posGPS.dt = coordGPS.dt;
+        posGPS.x = 111320 * (gpsCoord->lat - lat0);                         // north
+        posGPS.y = 111320 * cos(lat0) * (gpsCoord->lon - lon0);             // east
+        posGPS.z = gpsCoord->alt - alt0;                                    // down*/
+        posGPS.dt = gpsCoord->dt;
     }
-    return pos;
+    return posGPS;
 }
 
 void GPS::getPairData(vec_t pairData[2], float lon0, float lat0, float alt0) {  // function which gets the current gps value and the previous one
 
-    if (gps.location.isUpdated() && countGps < 2) {
-        pairData[countGps] = getPos(lat0, lon0, alt0);
-        countGps++;
-    } else {
-        countGps = 0;
+    if (gps.location.isUpdated()) {
+        pairData[1] = getPos(lat0, lon0, alt0);
     }
 }
