@@ -148,7 +148,8 @@ void setup()
     }
 
     // setting the maximum values for the gps and mag readings
-    MaxGpsValue.x = MaxGpsValue.y = MaxGpsValue.z = 20;  // in meters
+    MaxPosGpsValue.x = MaxPosGpsValue.y = MaxPosGpsValue.z = 20;  // in meters
+    MaxVelGpsValue.x = MaxVelGpsValue.y = MaxVelGpsValue.z = 3;   // in m/s
     MaxMagValue = 10; // in degrees
     MaxBarValue.altitude = 10; // in meters
 
@@ -213,9 +214,9 @@ void loop()
 
         estimation.updateFromGps(Vector3f(prevGpsPos.x, prevGpsPos.y, prevGpsPos.z), Vector3f(prevGpsVel.x, prevGpsVel.y, prevGpsVel.z), prevGpsPos.dt / 1000.0f);
 
-        if (abs(deltaX) < MaxGpsValue.x && abs(deltaY) < MaxGpsValue.y && abs(deltaZ) < MaxGpsValue.z
-            && abs(deltaVelX) < MaxPosGpsValue.x && abs(deltaVelY) < MaxPosGpsValue.y && abs(deltaVelZ) < MaxPosGpsValue.z) {
-            estimation.updateFromGps(Vector3f(currGpsPos.x, currGpsPos.y, currGpsPosz), Vector3f(currGpsVel.x, currGpsVel.y, currGpsVel.z), currGpsPos.dt / 1000.0f);
+        if (abs(deltaX) < MaxPosGpsValue.x && abs(deltaY) < MaxPosGpsValue.y && abs(deltaZ) < MaxPosGpsValue.z
+            && abs(deltaVelX) < MaxVelGpsValue.x && abs(deltaVelY) < MaxVelGpsValue.y && abs(deltaVelZ) < MaxVelGpsValue.z) {
+            estimation.updateFromGps(Vector3f(currGpsPos.x, currGpsPos.y, currGpsPos.z), Vector3f(currGpsVel.x, currGpsVel.y, currGpsVel.z), currGpsPos.dt / 1000.0f);
         }
 
        //estimation.updateFromGps(Vector3f(posGPS.x, posGPS.y, posGPS.z), Vector3f(speedGPS.x, speedGPS.y, speedGPS.z), posGPS.dt / 1000.0f);
