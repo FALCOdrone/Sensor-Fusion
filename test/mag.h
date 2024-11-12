@@ -21,7 +21,6 @@ class Magnetometer {
         Magnetometer(vec_t *magData);
         bool initialize();
         vec_t getMag();
-        void getPairData(vec_t pairMagData[2]);
 };
 
 #endif

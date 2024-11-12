@@ -26,8 +26,6 @@ class Barometer {
         Barometer(bar_t *bar);
         bool initialize();
         bar_t getBarometer();
-        void getPairData(bar_t pairBarData[2]);
-
 };
 
 #endif

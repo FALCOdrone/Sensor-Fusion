@@ -178,10 +178,3 @@ vec_t GPS::getPos(float lat0, float lon0, float alt0) {
     }
     return posGPS;
 }
-
-void GPS::getPairData(vec_t pairData[2], float lon0, float lat0, float alt0) {  // function which gets the current gps value and the previous one
-
-    if (gps.location.isUpdated()) {
-        pairData[1] = getPos(lat0, lon0, alt0);
-    }
-}
